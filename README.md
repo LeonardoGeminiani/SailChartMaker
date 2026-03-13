@@ -1,14 +1,14 @@
-# Crossover Chart
+# Sail Chart
 
 An interactive sail performance matrix for visualising **when to use each sail** based on True Wind Angle (TWA) and True Wind Speed (TWS).
 
-![Crossover Chart screenshot](ref1.jpg)
+![Sail Chart screenshot](ref1.jpg)
 
 ---
 
-## What is a crossover chart?
+## What is a sail chart?
 
-A crossover chart maps each sail's usable wind range as a region on a two-axis grid:
+A sail chart maps each sail's usable wind range as a region on a two-axis grid:
 
 - **X axis** — True Wind Angle (TWA) from 30 ° to 160 °
 - **Y axis** — True Wind Speed (TWS) from 0 to 30 knots
@@ -91,11 +91,25 @@ Changes are automatically saved to your browser's local storage — your work pe
 ```
 index.html          — HTML entry point
 css/
-  style.css         — design system (nautical dark theme)
-js/
-  sails.js          — SailStore: data model, undo/redo, localStorage, XML import/export
-  chart.js          — ChartRenderer: canvas drawing, hit testing, coordinate transforms
-  app.js            — UI logic: pointer events, mode switching, toolbar, modal
+  style.css         — design system
+src/
+  main.ts           — entry point
+  App.ts            — top-level wiring
+  model/
+    types.ts        — shared TypeScript types
+    UndoManager.ts  — generic undo/redo stack
+    SailStore.ts    — data model, persistence, XML import/export
+  canvas/
+    CoordinateSystem.ts   — pixel ↔ chart coordinate transforms
+    BackgroundRenderer.ts — static grid, AWS iso-curves
+    SailRenderer.ts       — sail fills, handles, cursor indicator
+    HitTester.ts          — click/touch hit detection
+  interaction/
+    DragHandler.ts        — drag state machine
+    InputController.ts    — pointer & keyboard events
+  ui/
+    SidebarPanel.ts       — sail list + editor panel
+    AddSailModal.ts       — new sail dialog
 package.json        — dev server (Vite)
 ```
 
@@ -107,10 +121,10 @@ The saved file is human-readable and portable:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<CrossoverChart>
+<SailChart>
   <Sail name="J1" color="#ff9500" opacity="0.55" visible="true"
         points="107.000,11.000 96.380,14.536 72.000,16.000 …"/>
-</CrossoverChart>
+</SailChart>
 ```
 
 Each `points` value is a space-separated list of `angle,speed` pairs defining the Catmull-Rom spline control points.
@@ -119,7 +133,7 @@ Each `points` value is a space-separated list of `angle,speed` pairs defining th
 
 ## Tech stack
 
-- Vanilla JavaScript (ES modules, no framework)
+- TypeScript (ES modules, no framework)
 - HTML5 Canvas (two-layer: static grid + interactive sails)
 - CSS custom properties
 - [Vite](https://vite.dev) for local development

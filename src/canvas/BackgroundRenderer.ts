@@ -10,6 +10,10 @@ function seg(c: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2
 
 // ── BackgroundRenderer ────────────────────────────────────────────────────────
 export class BackgroundRenderer {
+  showAWS  = true;
+  bgColor  = '#ffffff';
+  fontSize = 11;
+
   private readonly ctx: CanvasRenderingContext2D;
 
   constructor(
@@ -36,11 +40,13 @@ export class BackgroundRenderer {
     c.clearRect(0, 0, W, H);
 
     // Page background
-    c.fillStyle = '#d6e0ea';
+    c.fillStyle = this.bgColor;
     c.fillRect(0, 0, W, H);
 
-    // Chart area base
-    c.fillStyle = '#dce8f2';
+    // Chart area base (slightly lighter overlay)
+    c.fillStyle = this.bgColor;
+    c.fillRect(l, t, cw, ch);
+    c.fillStyle = 'rgba(255,255,255,0.12)';
     c.fillRect(l, t, cw, ch);
 
     // Subtle centre highlight
@@ -75,7 +81,7 @@ export class BackgroundRenderer {
     }
 
     // AWS iso-curves
-    this._drawAWSCurves(c);
+    if (this.showAWS) this._drawAWSCurves(c);
 
     // Chart border
     c.strokeStyle = 'rgba(60,90,130,0.50)';
@@ -99,7 +105,7 @@ export class BackgroundRenderer {
     }
 
     // Axis labels
-    c.font      = '11px "Azeret Mono", monospace';
+    c.font      = `${this.fontSize}px "Azeret Mono", monospace`;
     c.fillStyle = 'rgba(40,65,100,0.75)';
 
     // X bottom
@@ -131,7 +137,7 @@ export class BackgroundRenderer {
 
     // Axis titles
     c.fillStyle    = 'rgba(50,75,115,0.55)';
-    c.font         = '11.5px "Outfit", sans-serif';
+    c.font         = `${this.fontSize + 0.5}px "Outfit", sans-serif`;
     c.textAlign    = 'center';
     c.textBaseline = 'bottom';
     c.fillText('True Wind Angle — TWA (°)', l + cw / 2, H - 2);
@@ -176,7 +182,7 @@ export class BackgroundRenderer {
       c.setLineDash([]);
 
       if (!first) {
-        c.font         = '9px "Azeret Mono", monospace';
+        c.font         = `${this.fontSize - 2}px "Azeret Mono", monospace`;
         c.fillStyle    = 'rgba(30,60,150,0.65)';
         c.textAlign    = 'left';
         c.textBaseline = 'bottom';

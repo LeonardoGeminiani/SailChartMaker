@@ -173,12 +173,12 @@ export class SailStore {
 
   // ── XML import / export ──────────────────────────────────────────────────────
   toXML(): string {
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<CrossoverChart>\n';
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<SailChart>\n';
     for (const s of this._state.sails) {
       const pts = s.points.map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ');
       xml += `  <Sail name="${escXml(s.name)}" color="${s.color}" opacity="${s.opacity.toFixed(2)}" visible="${s.visible}" points="${pts}"/>\n`;
     }
-    return xml + '</CrossoverChart>';
+    return xml + '</SailChart>';
   }
 
   fromXML(xmlStr: string): void {

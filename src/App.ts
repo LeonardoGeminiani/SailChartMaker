@@ -161,15 +161,44 @@ export class App implements AppActions {
     this._btn('btnUndo', () => this.undo());
     this._btn('btnRedo', () => this.redo());
 
+    // ── Chart Settings modal ──────────────────────────────────────────────────
+    const settingsModal = document.getElementById('chartSettingsModal')!;
+    this._btn('btnChartSettings', () => { settingsModal.classList.add('open'); });
+    this._btn('chartSettingsClose', () => { settingsModal.classList.remove('open'); });
+    settingsModal.addEventListener('click', e => {
+      if (e.target === settingsModal) settingsModal.classList.remove('open');
+    });
+
+    const awsToggle = document.getElementById('toggleAWS') as HTMLInputElement;
+    awsToggle?.addEventListener('change', () => {
+      this.bgRend.showAWS = awsToggle.checked;
+      this.bgRend.draw();
+    });
+
+    const bgColorPicker = document.getElementById('bgColor') as HTMLInputElement;
+    bgColorPicker?.addEventListener('input', () => {
+      this.bgRend.bgColor = bgColorPicker.value;
+      this.bgRend.draw();
+    });
+
+    const fontSizeVal = document.getElementById('fontSizeVal')!;
+    const updateFontSize = (delta: number) => {
+      this.bgRend.fontSize = Math.min(18, Math.max(7, this.bgRend.fontSize + delta));
+      fontSizeVal.textContent = String(this.bgRend.fontSize);
+      this.bgRend.draw();
+    };
+    this._btn('fontSizeDec', () => updateFontSize(-1));
+    this._btn('fontSizeInc', () => updateFontSize(+1));
+
     this._btn('btnLoadXML', () => (document.getElementById('fileInput') as HTMLInputElement).click());
     this._btn('btnSaveXML', () => {
       this._download(
         URL.createObjectURL(new Blob([this.store.toXML()], { type: 'application/xml' })),
-        'CrossoverChart.xml',
+        'SailChart.xml',
       );
     });
     this._btn('btnExportPNG', () => {
-      this._download(this.sailRend.exportWith(this.bgCanvas).toDataURL('image/png'), 'CrossoverChart.png');
+      this._download(this.sailRend.exportWith(this.bgCanvas).toDataURL('image/png'), 'SailChart.png');
     });
     this._btn('btnPrint', () => window.print());
 

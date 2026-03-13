@@ -1,7 +1,7 @@
 {
   "name": "sailchart",
   "version": "1.0.0",
-  "description": "Interactive sail crossover chart — True Wind Angle vs True Wind Speed",
+  "description": "Interactive sail chart — True Wind Angle vs True Wind Speed",
   "type": "module",
   "scripts": {
     "dev": "vite",
