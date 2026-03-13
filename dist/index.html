@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sail Chart — Sail Performance</title>
+  <meta name="description" content="Interactive sail chart for visualizing performance envelopes by true wind angle and speed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Azeret+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-CoxSX8Yr.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BnS9tJ2a.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <svg class="brand-icon" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-width="1"/>
+      <path d="M14 2 L16 12 L26 14 L16 16 L14 26 L12 16 L2 14 L12 12 Z"
+            fill="currentColor" opacity="0.9"/>
+      <circle cx="14" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1"/>
+    </svg>
+    <div class="brand-text">
+      <h1>Sail Chart</h1>
+      <p class="brand-sub">Sail Performance Matrix</p>
+    </div>
+  </div>
+
+  <div class="mode-group" role="group" aria-label="Edit mode">
+    <button class="mode-btn" id="btn_select" title="Select &amp; drag  (V)">
+      <svg viewBox="0 0 16 16" width="13" height="13"><path d="M3 2 L3 13 L6.5 9.5 L9 14 L10.5 13.3 L8 8 L12 8 Z" fill="currentColor"/></svg>
+      Select
+    </button>
+    <button class="mode-btn" id="btn_addpt" title="Add point  (A)">
+      <svg viewBox="0 0 16 16" width="13" height="13"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Point
+    </button>
+    <button class="mode-btn" id="btn_delpt" title="Delete point  (D)">
+      <svg viewBox="0 0 16 16" width="13" height="13"><path d="M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Remove
+    </button>
+  </div>
+
+  <div class="toolbar">
+    <div class="tool-cluster">
+      <button id="btnUndo" title="Undo  (Ctrl+Z)">
+        <svg viewBox="0 0 16 16" width="13" height="13"><path d="M4 7 L2 5 L4 3M2 5 C4 5 8 3 12 7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10 C9 10 12 9 12 7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+      </button>
+      <button id="btnRedo" title="Redo  (Ctrl+Y)">
+        <svg viewBox="0 0 16 16" width="13" height="13"><path d="M12 7 L14 5 L12 3M14 5 C12 5 8 3 4 7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 10 C7 10 4 9 4 7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="tool-cluster">
+      <button id="btnLoadXML">Load XML</button>
+      <button id="btnSaveXML">Save XML</button>
+    </div>
+    <div class="tool-cluster">
+      <button id="btnExportPNG">Export PNG</button>
+      <button id="btnPrint">Print</button>
+    </div>
+    <select id="canvasRatio" class="ratio-select" title="Canvas proportion">
+      <option value="a4h" selected>A4 Horizontal</option>
+      <option value="a4v">A4 Vertical</option>
+      <option value="sq">Square</option>
+    </select>
+    <button id="btnChartSettings" title="Chart appearance settings">
+      <svg viewBox="0 0 16 16" width="13" height="13" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Chart
+    </button>
+    <button id="btnAddSail" class="btn-primary">
+      <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Add Sail
+    </button>
+  </div>
+</header>
+
+<div class="app-body">
+  <aside class="sidebar">
+    <div class="sidebar-hd">
+      <span>Sails</span>
+      <span class="sail-count" id="sailCount">0</span>
+    </div>
+
+    <div class="sail-list" id="sailList" role="listbox" aria-label="Sail list"></div>
+
+    <div class="editor" id="editor" aria-hidden="true">
+      <div class="editor-hd" id="edTitle">Edit Sail</div>
+      <label class="field">
+        <span class="field-label">Name</span>
+        <input type="text" id="edName" autocomplete="off" spellcheck="false">
+      </label>
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">Color</span>
+          <input type="color" id="edColor">
+        </label>
+        <label class="field">
+          <span class="field-label">Opacity %</span>
+          <input type="number" id="edOpacity" min="10" max="90" step="5">
+        </label>
+      </div>
+      <button id="btnDelSail" class="btn-danger">Delete Sail</button>
+    </div>
+
+    <div class="hint-box" id="hintBox">
+      <span id="hintText">Click a sail to select it · <kbd>V</kbd> <kbd>A</kbd> <kbd>D</kbd></span>
+    </div>
+  </aside>
+
+  <div class="chart-area" id="chartArea">
+    <canvas id="bgCanvas"></canvas>
+    <canvas id="mainCanvas" role="img" aria-label="Sail chart"></canvas>
+  </div>
+</div>
+
+<footer class="status-bar">
+  <div class="status-item">
+    <span class="status-lbl">TWA</span>
+    <span class="status-val" id="stAngle">—</span>
+  </div>
+  <div class="status-sep"></div>
+  <div class="status-item">
+    <span class="status-lbl">TWS</span>
+    <span class="status-val" id="stSpeed">—</span>
+  </div>
+  <div class="status-sep"></div>
+  <div class="status-item">
+    <span class="status-lbl">SAIL</span>
+    <span class="status-val" id="stSail">—</span>
+  </div>
+  <div class="status-item status-right">
+    <span class="status-lbl">MODE</span>
+    <span class="status-val" id="stMode">Select</span>
+  </div>
+</footer>
+
+<!-- Add Sail Modal -->
+<div class="modal-backdrop" id="addModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <h2 class="modal-title" id="modalTitle">New Sail</h2>
+    <label class="field">
+      <span class="field-label">Name</span>
+      <input type="text" id="newName" placeholder="e.g. Spinnaker A2" autocomplete="off">
+    </label>
+    <label class="field">
+      <span class="field-label">Color</span>
+      <input type="color" id="newColor" value="#4f8ef7">
+    </label>
+    <div class="field-row">
+      <label class="field">
+        <span class="field-label">Angle center (°)</span>
+        <input type="number" id="newAngle" value="90" min="30" max="160">
+      </label>
+      <label class="field">
+        <span class="field-label">Speed center (kts)</span>
+        <input type="number" id="newSpeed" value="15" min="0" max="30">
+      </label>
+    </div>
+    <p class="modal-hint">An oval will be created. Use <strong>+ Point</strong> mode to sculpt any shape.</p>
+    <div class="modal-actions">
+      <button id="modalCancel">Cancel</button>
+      <button id="modalAdd" class="btn-primary">Add Sail</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".xml" style="display:none">
+
+<!-- Chart Settings Modal -->
+<div class="modal-backdrop" id="chartSettingsModal" role="dialog" aria-modal="true" aria-labelledby="chartSettingsTitle">
+  <div class="modal settings-modal">
+    <h2 class="modal-title" id="chartSettingsTitle">Chart Settings</h2>
+
+    <div class="settings-row">
+      <span class="settings-label">Background Color</span>
+      <label class="color-pick-label">
+        <input type="color" id="bgColor" value="#ffffff">
+      </label>
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">Label Font Size</span>
+      <div class="settings-stepper">
+        <button id="fontSizeDec" class="stepper-btn">−</button>
+        <span id="fontSizeVal">11</span>
+        <button id="fontSizeInc" class="stepper-btn">+</button>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <span class="settings-label">AWS Iso-Curves</span>
+      <label class="toggle-label">
+        <input type="checkbox" id="toggleAWS" checked>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      </label>
+    </div>
+
+    <div class="modal-actions">
+      <button id="chartSettingsClose" class="btn-primary">Done</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
