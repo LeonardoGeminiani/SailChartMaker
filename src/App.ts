@@ -1,5 +1,6 @@
 import { AppActions, EditMode } from './model/types.js';
 import { SailStore } from './model/SailStore.js';
+import { PolarData } from './model/PolarData.js';
 import { CoordinateSystem } from './canvas/CoordinateSystem.js';
 import { BackgroundRenderer } from './canvas/BackgroundRenderer.js';
 import { SailRenderer } from './canvas/SailRenderer.js';
@@ -169,10 +170,34 @@ export class App implements AppActions {
       if (e.target === settingsModal) settingsModal.classList.remove('open');
     });
 
-    const awsToggle = document.getElementById('toggleAWS') as HTMLInputElement;
+    const awsToggle  = document.getElementById('toggleAWS')  as HTMLInputElement;
+    const polarHint  = document.getElementById('polarHint')!;
+    const polarInput = document.getElementById('polarInput') as HTMLInputElement;
+
     awsToggle?.addEventListener('change', () => {
       this.bgRend.showAWS = awsToggle.checked;
       this.bgRend.draw();
+    });
+
+    this._btn('btnLoadPolar', () => polarInput.click());
+
+    polarInput.addEventListener('change', e => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const polar = PolarData.fromCSV(ev.target!.result as string, file.name);
+          this.bgRend.polar = polar;
+          awsToggle.disabled = false;
+          polarHint.textContent = polar.name;
+          polarHint.classList.add('polar-hint--loaded');
+        } catch (err) {
+          alert('Error loading polar: ' + (err as Error).message);
+        }
+      };
+      reader.readAsText(file);
+      polarInput.value = '';
     });
 
     const bgColorPicker = document.getElementById('bgColor') as HTMLInputElement;

@@ -1,7 +1,7 @@
 import { CoordinateSystem } from './CoordinateSystem.js';
 import { X_MIN, X_MAX, Y_MIN, Y_MAX } from '../model/SailStore.js';
+import { PolarData } from '../model/PolarData.js';
 
-const BSP = 5; // assumed boat speed (kts) for AWS iso-curve formula
 const AWS_VALUES = [5, 10, 15, 20, 25, 30];
 
 function seg(c: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number): void {
@@ -10,9 +10,10 @@ function seg(c: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2
 
 // ── BackgroundRenderer ────────────────────────────────────────────────────────
 export class BackgroundRenderer {
-  showAWS  = true;
+  showAWS  = false;
   bgColor  = '#ffffff';
   fontSize = 11;
+  polar: PolarData | null = null;
 
   private readonly ctx: CanvasRenderingContext2D;
 
@@ -149,9 +150,29 @@ export class BackgroundRenderer {
     c.restore();
   }
 
-  // AWS iso-curve: TWS = –BSP·cos(θ) + √(AWS² – BSP²·sin²(θ))
+  // AWS iso-curve: AWS = √(TWS² + BSP² + 2·TWS·BSP·cos(TWA))
+  // For each target AWS value, binary-search for TWS at each TWA step.
   private _drawAWSCurves(c: CanvasRenderingContext2D): void {
+    if (!this.polar) return;
+    const polar = this.polar;
     const { x: l, y: t, w: cw, h: ch } = this.coords.chartRect;
+
+    const awsAt = (twa: number, tws: number): number => {
+      const bsp = polar.getBSP(twa, tws);
+      const rad = twa * Math.PI / 180;
+      return Math.sqrt(tws * tws + bsp * bsp + 2 * tws * bsp * Math.cos(rad));
+    };
+
+    const findTWS = (twa: number, targetAWS: number): number | null => {
+      if (awsAt(twa, Y_MAX) < targetAWS) return null;
+      let lo = Y_MIN, hi = Y_MAX;
+      for (let i = 0; i < 40; i++) {
+        const mid = (lo + hi) / 2;
+        if (awsAt(twa, mid) < targetAWS) lo = mid; else hi = mid;
+      }
+      const tws = (lo + hi) / 2;
+      return tws >= Y_MIN && tws <= Y_MAX ? tws : null;
+    };
 
     c.save();
     c.beginPath();
@@ -164,11 +185,8 @@ export class BackgroundRenderer {
       let labelPx = 0, labelPy = 0;
 
       for (let twa = X_MIN; twa <= X_MAX; twa += 0.5) {
-        const rad  = twa * Math.PI / 180;
-        const disc = aws * aws - BSP * BSP * Math.sin(rad) ** 2;
-        if (disc < 0) continue;
-        const tws = -BSP * Math.cos(rad) + Math.sqrt(disc);
-        if (tws < Y_MIN || tws > Y_MAX) continue;
+        const tws = findTWS(twa, aws);
+        if (tws === null) { first = true; continue; }
 
         const [px, py] = this.coords.toPixel(twa, tws);
         if (first) { c.moveTo(px, py); labelPx = px; labelPy = py; first = false; }
@@ -181,7 +199,7 @@ export class BackgroundRenderer {
       c.stroke();
       c.setLineDash([]);
 
-      if (!first) {
+      if (labelPx || labelPy) {
         c.font         = `${this.fontSize - 2}px "Azeret Mono", monospace`;
         c.fillStyle    = 'rgba(30,60,150,0.65)';
         c.textAlign    = 'left';

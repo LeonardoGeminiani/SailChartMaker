@@ -596,7 +596,7 @@ canvas {
 }
 
 /* ── Settings Modal ─────────────────────────────────────────────────────────── */
-.settings-modal { min-width: 260px; }
+.settings-modal { min-width: 280px; }
 
 .settings-row {
   display: flex;
@@ -606,6 +606,40 @@ canvas {
   border-bottom: 1px solid var(--line);
 }
 .settings-row:last-of-type { border-bottom: none; }
+
+/* AWS row — two sub-lines */
+.settings-row--aws { flex-direction: column; align-items: stretch; gap: 6px; }
+.settings-aws-top  { display: flex; align-items: center; justify-content: space-between; }
+.settings-aws-bottom { display: flex; align-items: center; gap: 8px; }
+
+.polar-hint {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--text2);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.polar-hint--loaded { color: var(--teal); }
+
+.btn-small {
+  font-family: var(--ff-ui);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--line2);
+  background: var(--surface2);
+  color: var(--text3);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btn-small:hover { background: var(--surface3); border-color: var(--line3); }
+
+/* Disabled toggle */
+.toggle-label input:disabled + .toggle-track { opacity: 0.38; cursor: not-allowed; }
+.toggle-label:has(input:disabled) { cursor: not-allowed; }
 
 .settings-label {
   font-family: var(--ff-ui);
