@@ -1,7 +1,6 @@
 import { SailData, EditMode, CursorPosition } from '../model/types.js';
 import { SailStore } from '../model/SailStore.js';
 import { CoordinateSystem, splinePath } from './CoordinateSystem.js';
-import { X_MIN, X_MAX, Y_MIN, Y_MAX } from '../model/SailStore.js';
 
 function seg(c: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number): void {
   c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
@@ -18,6 +17,7 @@ function hexToRgb(hex: string): string {
 // ── SailRenderer ──────────────────────────────────────────────────────────────
 export class SailRenderer {
   private readonly ctx: CanvasRenderingContext2D;
+  resolution = 1;
   cursor: CursorPosition | null = null;
 
   constructor(
@@ -29,16 +29,22 @@ export class SailRenderer {
   }
 
   resize(w: number, h: number): void {
-    this.canvas.width  = w;
-    this.canvas.height = h;
+    this.canvas.width        = Math.round(w * this.resolution);
+    this.canvas.height       = Math.round(h * this.resolution);
+    this.canvas.style.width  = w + 'px';
+    this.canvas.style.height = h + 'px';
   }
 
   draw(mode: EditMode): void {
     const c = this.ctx;
+    const res = this.resolution;
     const { W, H } = this.coords;
     const { x: l, y: t, w: cw, h: ch } = this.coords.chartRect;
 
-    c.clearRect(0, 0, W, H);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    c.setTransform(res, 0, 0, res, 0, 0);
+
     c.save();
     c.beginPath();
     c.rect(l, t, cw, ch);
@@ -178,8 +184,8 @@ export class SailRenderer {
   /** Composite bgCanvas + mainCanvas into a new canvas for PNG export. */
   exportWith(bgCanvas: HTMLCanvasElement): HTMLCanvasElement {
     const out = document.createElement('canvas');
-    out.width  = this.coords.W;
-    out.height = this.coords.H;
+    out.width  = this.canvas.width;   // physical = logical × resolution
+    out.height = this.canvas.height;
     const oc = out.getContext('2d')!;
     oc.drawImage(bgCanvas, 0, 0);
     oc.drawImage(this.canvas, 0, 0);

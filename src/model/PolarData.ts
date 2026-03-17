@@ -46,6 +46,11 @@ export class PolarData {
     return new PolarData(filename.replace(/\.[^.]+$/, ''), twsValues, twaValues, bsp);
   }
 
+  get minTWS(): number { return this.twsValues[0]; }
+  get maxTWS(): number { return this.twsValues[this.twsValues.length - 1]; }
+  get minTWA(): number { return this.twaValues[0]; }
+  get maxTWA(): number { return this.twaValues[this.twaValues.length - 1]; }
+
   /** Bilinear interpolation, clamped to polar grid bounds. */
   getBSP(twa: number, tws: number): number {
     const twaArr = this.twaValues;

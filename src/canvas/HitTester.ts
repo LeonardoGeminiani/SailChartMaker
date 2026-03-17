@@ -6,6 +6,7 @@ const HIT_RADIUS = 9; // px
 
 // ── HitTester ─────────────────────────────────────────────────────────────────
 export class HitTester {
+  resolution = 1;
   private readonly ctx: CanvasRenderingContext2D;
 
   constructor(
@@ -13,30 +14,30 @@ export class HitTester {
     private readonly coords: CoordinateSystem,
     private readonly store: SailStore,
   ) {
-    // Uses the same canvas context as SailRenderer for isPointInPath.
-    // Path operations do not affect the visual output.
     this.ctx = canvas.getContext('2d')!;
   }
 
   /** Returns the sail under (px, py), checking the selected sail first. */
   hitSail(px: number, py: number): SailData | null {
     const c = this.ctx;
+    const res = this.resolution;
+    // Paths are built in logical coords with identity transform so that
+    // isPointInPath receives physical canvas coords (CSS * resolution).
+    c.setTransform(1, 0, 0, 1, 0, 0);
 
-    // Check selected sail first
+    const check = (s: SailData): boolean => {
+      if (!s.visible || s.points.length < 3) return false;
+      splinePath(c, s.points, this.coords);
+      return c.isPointInPath(px * res, py * res);
+    };
+
     const sel = this.store.find(this.store.selectedId);
-    if (sel && sel.visible && sel.points.length >= 3) {
-      splinePath(c, sel.points, this.coords);
-      if (c.isPointInPath(px, py)) return sel;
-    }
+    if (sel && check(sel)) return sel;
 
-    // Check all sails top-to-bottom
     for (let i = this.store.sails.length - 1; i >= 0; i--) {
       const s = this.store.sails[i];
-      if (!s.visible || s.points.length < 3) continue;
-      splinePath(c, s.points, this.coords);
-      if (c.isPointInPath(px, py)) return s;
+      if (check(s)) return s;
     }
-
     return null;
   }
 

@@ -29,6 +29,7 @@ export class App implements AppActions {
 
   // Canvas proportion
   private ratio   = 297 / 210; // default: A4 horizontal
+  private resolution = 1;
   private lastAreaW = 0;
   private lastAreaH = 0;
 
@@ -206,6 +207,14 @@ export class App implements AppActions {
       this.bgRend.draw();
     });
 
+    const smoothingRange = document.getElementById('smoothingRange') as HTMLInputElement;
+    const smoothingVal   = document.getElementById('smoothingVal')!;
+    smoothingRange?.addEventListener('input', () => {
+      this.bgRend.smoothing = Number(smoothingRange.value);
+      smoothingVal.textContent = smoothingRange.value;
+      this.bgRend.draw();
+    });
+
     const fontSizeVal = document.getElementById('fontSizeVal')!;
     const updateFontSize = (delta: number) => {
       this.bgRend.fontSize = Math.min(18, Math.max(7, this.bgRend.fontSize + delta));
@@ -214,6 +223,44 @@ export class App implements AppActions {
     };
     this._btn('fontSizeDec', () => updateFontSize(-1));
     this._btn('fontSizeInc', () => updateFontSize(+1));
+
+    // ── Axis range ──────────────────────────────────────────────────────────
+    const axisInput = (id: string, setter: (v: number) => void) => {
+      const el = document.getElementById(id) as HTMLInputElement;
+      el?.addEventListener('change', () => {
+        const v = Number(el.value);
+        if (!isFinite(v)) return;
+        setter(v);
+        this.bgRend.draw();
+        this.redraw();
+      });
+    };
+    axisInput('twaMin', v => { this.coords.twaMin = v; });
+    axisInput('twaMax', v => { this.coords.twaMax = v; });
+    axisInput('twsMin', v => { this.coords.twsMin = v; });
+    axisInput('twsMax', v => { this.coords.twsMax = v; });
+
+    // ── Stroke widths ────────────────────────────────────────────────────────
+    const strokeSlider = (id: string, valId: string, setter: (v: number) => void) => {
+      const el  = document.getElementById(id)    as HTMLInputElement;
+      const val = document.getElementById(valId)!;
+      el?.addEventListener('input', () => {
+        const v = Number(el.value);
+        setter(v);
+        val.textContent = el.value;
+        this.bgRend.draw();
+      });
+    };
+    strokeSlider('vmgStroke',  'vmgStrokeVal',  v => { this.bgRend.vmgStrokeWidth  = v; });
+    strokeSlider('awsStroke',  'awsStrokeVal',  v => { this.bgRend.awsStrokeWidth  = v; });
+    strokeSlider('axisStroke', 'axisStrokeVal', v => { this.bgRend.axisStrokeScale = v; });
+
+    // ── Canvas resolution ────────────────────────────────────────────────────
+    const resSelect = document.getElementById('canvasRes') as HTMLSelectElement;
+    resSelect?.addEventListener('change', () => {
+      this.resolution = Number(resSelect.value);
+      this._applySize(this.lastAreaW, this.lastAreaH);
+    });
 
     this._btn('btnLoadXML', () => (document.getElementById('fileInput') as HTMLInputElement).click());
     this._btn('btnSaveXML', () => {
@@ -296,6 +343,9 @@ export class App implements AppActions {
       cv.style.top  = `${top}px`;
     }
 
+    this.bgRend.resolution   = this.resolution;
+    this.sailRend.resolution = this.resolution;
+    this.hitTest.resolution  = this.resolution;
     this.bgRend.resize(w, h);
     this.sailRend.resize(w, h);
     this.redraw();

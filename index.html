@@ -188,6 +188,65 @@
       </div>
     </div>
 
+    <div class="settings-row">
+      <span class="settings-label">Curve Smoothing</span>
+      <div class="settings-slider">
+        <input type="range" id="smoothingRange" min="0" max="10" step="1" value="5">
+        <span id="smoothingVal">5</span>
+      </div>
+    </div>
+
+    <div class="settings-section">Axis Range</div>
+    <div class="settings-row">
+      <span class="settings-label">TWA (°)</span>
+      <div class="settings-range-pair">
+        <input type="number" id="twaMin" class="axis-input" value="30" min="0" max="175" step="5">
+        <span class="range-sep">–</span>
+        <input type="number" id="twaMax" class="axis-input" value="160" min="5" max="180" step="5">
+      </div>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">TWS (kts)</span>
+      <div class="settings-range-pair">
+        <input type="number" id="twsMin" class="axis-input" value="0" min="0" max="25" step="1">
+        <span class="range-sep">–</span>
+        <input type="number" id="twsMax" class="axis-input" value="30" min="5" max="50" step="1">
+      </div>
+    </div>
+
+    <div class="settings-section">Stroke Widths</div>
+    <div class="settings-row">
+      <span class="settings-label">VMG lines</span>
+      <div class="settings-slider">
+        <input type="range" id="vmgStroke" min="0.5" max="4" step="0.5" value="1.5">
+        <span id="vmgStrokeVal">1.5</span>
+      </div>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">AWS lines</span>
+      <div class="settings-slider">
+        <input type="range" id="awsStroke" min="0.5" max="4" step="0.5" value="1">
+        <span id="awsStrokeVal">1</span>
+      </div>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">Axis / Grid</span>
+      <div class="settings-slider">
+        <input type="range" id="axisStroke" min="0.2" max="3" step="0.2" value="1">
+        <span id="axisStrokeVal">1</span>
+      </div>
+    </div>
+
+    <div class="settings-section">Canvas</div>
+    <div class="settings-row">
+      <span class="settings-label">Resolution</span>
+      <select id="canvasRes" class="ratio-select">
+        <option value="1" selected>1× screen</option>
+        <option value="2">2× high-DPI</option>
+        <option value="3">3× print</option>
+      </select>
+    </div>
+
     <div class="settings-row settings-row--aws">
       <div class="settings-aws-top">
         <span class="settings-label">AWS Iso-Curves</span>

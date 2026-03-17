@@ -607,6 +607,63 @@ canvas {
 }
 .settings-row:last-of-type { border-bottom: none; }
 
+/* Smoothing slider */
+.settings-slider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-slider input[type="range"] {
+  width: 100px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.settings-slider span {
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  color: var(--text);
+  min-width: 16px;
+  text-align: right;
+}
+
+/* Settings section header */
+.settings-section {
+  font-family: var(--ff-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text2);
+  padding: 10px 0 2px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2px;
+}
+
+/* Axis range pair */
+.settings-range-pair {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.axis-input {
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  width: 52px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--line2);
+  background: var(--surface2);
+  color: var(--text);
+  text-align: center;
+  outline: none;
+}
+.axis-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
+.range-sep {
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  color: var(--text2);
+}
+
 /* AWS row — two sub-lines */
 .settings-row--aws { flex-direction: column; align-items: stretch; gap: 6px; }
 .settings-aws-top  { display: flex; align-items: center; justify-content: space-between; }

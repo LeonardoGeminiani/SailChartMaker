@@ -1,4 +1,3 @@
-import { SailPoint } from '../model/types.js';
 import { X_MIN, X_MAX, Y_MIN, Y_MAX } from '../model/SailStore.js';
 
 export interface ChartRect { x: number; y: number; w: number; h: number; }
@@ -9,28 +8,34 @@ export class CoordinateSystem {
   W = 800;
   H = 600;
 
+  // Axis range — mutable at runtime
+  twaMin = X_MIN;
+  twaMax = X_MAX;
+  twsMin = Y_MIN;
+  twsMax = Y_MAX;
+
   resize(w: number, h: number): void { this.W = w; this.H = h; }
 
   toPixel(dx: number, dy: number): [number, number] {
     const { l, r, t, b } = this.pad;
     return [
-      l + (dx - X_MIN) / (X_MAX - X_MIN) * (this.W - l - r),
-      this.H - b - (dy - Y_MIN) / (Y_MAX - Y_MIN) * (this.H - t - b),
+      l + (dx - this.twaMin) / (this.twaMax - this.twaMin) * (this.W - l - r),
+      this.H - b - (dy - this.twsMin) / (this.twsMax - this.twsMin) * (this.H - t - b),
     ];
   }
 
   fromPixel(px: number, py: number): [number, number] {
     const { l, r, t, b } = this.pad;
     return [
-      X_MIN + (px - l) / (this.W - l - r) * (X_MAX - X_MIN),
-      Y_MIN + (this.H - b - py) / (this.H - t - b) * (Y_MAX - Y_MIN),
+      this.twaMin + (px - l) / (this.W - l - r) * (this.twaMax - this.twaMin),
+      this.twsMin + (this.H - b - py) / (this.H - t - b) * (this.twsMax - this.twsMin),
     ];
   }
 
   clamp(x: number, y: number): [number, number] {
     return [
-      Math.max(X_MIN, Math.min(X_MAX, x)),
-      Math.max(Y_MIN, Math.min(Y_MAX, y)),
+      Math.max(this.twaMin, Math.min(this.twaMax, x)),
+      Math.max(this.twsMin, Math.min(this.twsMax, y)),
     ];
   }
 
@@ -40,14 +45,14 @@ export class CoordinateSystem {
   }
 
   isInBounds(twa: number, tws: number): boolean {
-    return twa >= X_MIN && twa <= X_MAX && tws >= Y_MIN && tws <= Y_MAX;
+    return twa >= this.twaMin && twa <= this.twaMax && tws >= this.twsMin && tws <= this.twsMax;
   }
 }
 
 // ── Shared Catmull-Rom closed spline helper ────────────────────────────────────
 export function splinePath(
   ctx: CanvasRenderingContext2D,
-  pts: SailPoint[],
+  pts: import('../model/types.js').SailPoint[],
   coords: CoordinateSystem,
 ): void {
   if (pts.length < 2) return;
