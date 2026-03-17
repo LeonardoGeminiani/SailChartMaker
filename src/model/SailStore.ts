@@ -1,4 +1,4 @@
-import { SailData, SailPoint } from './types.js';
+import { SailData, SailPoint, ChartSettings } from './types.js';
 import { UndoManager } from './UndoManager.js';
 
 // ── Chart domain constants ────────────────────────────────────────────────────
@@ -46,11 +46,20 @@ interface StoreState {
   nextId: number;
 }
 
+const DEFAULT_CHART_SETTINGS: ChartSettings = {
+  bgColor: '#ffffff', fontSize: 11, smoothing: 5,
+  vmgStrokeWidth: 1.5, awsStrokeWidth: 1.0, axisStrokeScale: 1.0,
+  twaMin: 30, twaMax: 160, twsMin: 0, twsMax: 30,
+  showAWS: false, resolution: 1,
+};
+
 // ── SailStore ─────────────────────────────────────────────────────────────────
 export class SailStore {
   private _state: StoreState;
   private _selectedId: number | null = null;
   private readonly _undo = new UndoManager<StoreState>();
+
+  chartSettings: ChartSettings = { ...DEFAULT_CHART_SETTINGS };
 
   constructor() {
     this._state = this._load();
@@ -143,16 +152,27 @@ export class SailStore {
   }
 
   // ── Persistence ─────────────────────────────────────────────────────────────
+  /** Save sails + chartSettings to localStorage. */
   save(): void {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this._state)); } catch { /* quota */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        ...this._state,
+        chartSettings: this.chartSettings,
+      }));
+    } catch { /* quota */ }
   }
 
   private _load(): StoreState {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const data = JSON.parse(raw) as StoreState;
-        if (Array.isArray(data.sails) && data.sails.length > 0) return data;
+        const data = JSON.parse(raw) as StoreState & { chartSettings?: Partial<ChartSettings> };
+        if (Array.isArray(data.sails) && data.sails.length > 0) {
+          if (data.chartSettings) {
+            this.chartSettings = { ...DEFAULT_CHART_SETTINGS, ...data.chartSettings };
+          }
+          return { sails: data.sails, nextId: data.nextId };
+        }
       }
     } catch { /* corrupt */ }
     return this._defaults();
@@ -173,7 +193,17 @@ export class SailStore {
 
   // ── XML import / export ──────────────────────────────────────────────────────
   toXML(): string {
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<SailChart>\n';
+    const cs = this.chartSettings;
+    const settingsAttr = [
+      `bgColor="${cs.bgColor}"`, `fontSize="${cs.fontSize}"`, `smoothing="${cs.smoothing}"`,
+      `vmgStrokeWidth="${cs.vmgStrokeWidth}"`, `awsStrokeWidth="${cs.awsStrokeWidth}"`,
+      `axisStrokeScale="${cs.axisStrokeScale}"`,
+      `twaMin="${cs.twaMin}"`, `twaMax="${cs.twaMax}"`,
+      `twsMin="${cs.twsMin}"`, `twsMax="${cs.twsMax}"`,
+      `showAWS="${cs.showAWS}"`, `resolution="${cs.resolution}"`,
+    ].join(' ');
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<SailChart>\n`;
+    xml += `  <ChartSettings ${settingsAttr}/>\n`;
     for (const s of this._state.sails) {
       const pts = s.points.map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ');
       xml += `  <Sail name="${escXml(s.name)}" color="${s.color}" opacity="${s.opacity.toFixed(2)}" visible="${s.visible}" points="${pts}"/>\n`;
@@ -185,6 +215,26 @@ export class SailStore {
     const doc = new DOMParser().parseFromString(xmlStr, 'application/xml');
     const nodes = doc.querySelectorAll('Sail');
     if (!nodes.length) throw new Error('No sail data found in file.');
+
+    // Load chart settings if present
+    const csNode = doc.querySelector('ChartSettings');
+    if (csNode) {
+      const g = (k: string, fb: string) => csNode.getAttribute(k) ?? fb;
+      this.chartSettings = {
+        bgColor:         g('bgColor',         DEFAULT_CHART_SETTINGS.bgColor),
+        fontSize:        Number(g('fontSize',        String(DEFAULT_CHART_SETTINGS.fontSize))),
+        smoothing:       Number(g('smoothing',       String(DEFAULT_CHART_SETTINGS.smoothing))),
+        vmgStrokeWidth:  Number(g('vmgStrokeWidth',  String(DEFAULT_CHART_SETTINGS.vmgStrokeWidth))),
+        awsStrokeWidth:  Number(g('awsStrokeWidth',  String(DEFAULT_CHART_SETTINGS.awsStrokeWidth))),
+        axisStrokeScale: Number(g('axisStrokeScale', String(DEFAULT_CHART_SETTINGS.axisStrokeScale))),
+        twaMin:          Number(g('twaMin',          String(DEFAULT_CHART_SETTINGS.twaMin))),
+        twaMax:          Number(g('twaMax',          String(DEFAULT_CHART_SETTINGS.twaMax))),
+        twsMin:          Number(g('twsMin',          String(DEFAULT_CHART_SETTINGS.twsMin))),
+        twsMax:          Number(g('twsMax',          String(DEFAULT_CHART_SETTINGS.twsMax))),
+        showAWS:         g('showAWS', 'false') === 'true',
+        resolution:      Number(g('resolution',      String(DEFAULT_CHART_SETTINGS.resolution))),
+      };
+    }
 
     this.pushUndo();
     let nextId = 1;

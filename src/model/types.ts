@@ -19,6 +19,21 @@ export interface CursorPosition {
   tws: number;
 }
 
+export interface ChartSettings {
+  bgColor:        string;
+  fontSize:       number;
+  smoothing:      number;
+  vmgStrokeWidth: number;
+  awsStrokeWidth: number;
+  axisStrokeScale:number;
+  twaMin:         number;
+  twaMax:         number;
+  twsMin:         number;
+  twsMax:         number;
+  showAWS:        boolean;
+  resolution:     number;
+}
+
 /** Implemented by App, consumed by InputController and SidebarPanel */
 export interface AppActions {
   readonly mode: EditMode;

@@ -90,6 +90,7 @@ export class App implements AppActions {
     this.modal.setup();
     this.input.setup();
     this._setupToolbar();
+    this._applySettings(this.store.chartSettings);
     this._setModeButtons('select');
   }
 
@@ -163,25 +164,33 @@ export class App implements AppActions {
     this._btn('btnUndo', () => this.undo());
     this._btn('btnRedo', () => this.redo());
 
-    // ── Chart Settings modal ──────────────────────────────────────────────────
-    const settingsModal = document.getElementById('chartSettingsModal')!;
-    this._btn('btnChartSettings', () => { settingsModal.classList.add('open'); });
-    this._btn('chartSettingsClose', () => { settingsModal.classList.remove('open'); });
-    settingsModal.addEventListener('click', e => {
-      if (e.target === settingsModal) settingsModal.classList.remove('open');
-    });
+    // ── Sidebar tabs ─────────────────────────────────────────────────────────
+    const panelSails  = document.getElementById('panelSails')!;
+    const panelChart  = document.getElementById('panelChart')!;
+    const tabSails    = document.getElementById('tabSails')!;
+    const tabChart    = document.getElementById('tabChart')!;
+    const switchTab = (toChart: boolean) => {
+      panelSails.hidden = toChart;
+      panelChart.hidden = !toChart;
+      tabSails.classList.toggle('active', !toChart);
+      tabChart.classList.toggle('active',  toChart);
+    };
+    tabSails.addEventListener('click', () => switchTab(false));
+    tabChart.addEventListener('click', () => switchTab(true));
 
+    // ── AWS polar load ────────────────────────────────────────────────────────
     const awsToggle  = document.getElementById('toggleAWS')  as HTMLInputElement;
     const polarHint  = document.getElementById('polarHint')!;
     const polarInput = document.getElementById('polarInput') as HTMLInputElement;
 
     awsToggle?.addEventListener('change', () => {
       this.bgRend.showAWS = awsToggle.checked;
+      this.store.chartSettings.showAWS = awsToggle.checked;
+      this.store.save();
       this.bgRend.draw();
     });
 
     this._btn('btnLoadPolar', () => polarInput.click());
-
     polarInput.addEventListener('change', e => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -193,6 +202,7 @@ export class App implements AppActions {
           awsToggle.disabled = false;
           polarHint.textContent = polar.name;
           polarHint.classList.add('polar-hint--loaded');
+          this.bgRend.draw();
         } catch (err) {
           alert('Error loading polar: ' + (err as Error).message);
         }
@@ -201,67 +211,80 @@ export class App implements AppActions {
       polarInput.value = '';
     });
 
+    // ── Background color ──────────────────────────────────────────────────────
     const bgColorPicker = document.getElementById('bgColor') as HTMLInputElement;
     bgColorPicker?.addEventListener('input', () => {
       this.bgRend.bgColor = bgColorPicker.value;
+      this.store.chartSettings.bgColor = bgColorPicker.value;
+      this.store.save();
       this.bgRend.draw();
     });
 
-    const smoothingRange = document.getElementById('smoothingRange') as HTMLInputElement;
-    const smoothingVal   = document.getElementById('smoothingVal')!;
-    smoothingRange?.addEventListener('input', () => {
-      this.bgRend.smoothing = Number(smoothingRange.value);
-      smoothingVal.textContent = smoothingRange.value;
-      this.bgRend.draw();
-    });
-
+    // ── Font size ─────────────────────────────────────────────────────────────
     const fontSizeVal = document.getElementById('fontSizeVal')!;
     const updateFontSize = (delta: number) => {
       this.bgRend.fontSize = Math.min(18, Math.max(7, this.bgRend.fontSize + delta));
+      this.store.chartSettings.fontSize = this.bgRend.fontSize;
       fontSizeVal.textContent = String(this.bgRend.fontSize);
+      this.store.save();
       this.bgRend.draw();
     };
     this._btn('fontSizeDec', () => updateFontSize(-1));
     this._btn('fontSizeInc', () => updateFontSize(+1));
 
-    // ── Axis range ──────────────────────────────────────────────────────────
+    // ── Smoothing ─────────────────────────────────────────────────────────────
+    const smoothingRange = document.getElementById('smoothingRange') as HTMLInputElement;
+    const smoothingVal   = document.getElementById('smoothingVal')!;
+    smoothingRange?.addEventListener('input', () => {
+      this.bgRend.smoothing = Number(smoothingRange.value);
+      this.store.chartSettings.smoothing = this.bgRend.smoothing;
+      smoothingVal.textContent = smoothingRange.value;
+      this.store.save();
+      this.bgRend.draw();
+    });
+
+    // ── Axis range ────────────────────────────────────────────────────────────
     const axisInput = (id: string, setter: (v: number) => void) => {
       const el = document.getElementById(id) as HTMLInputElement;
       el?.addEventListener('change', () => {
         const v = Number(el.value);
         if (!isFinite(v)) return;
         setter(v);
+        this.store.save();
         this.bgRend.draw();
         this.redraw();
       });
     };
-    axisInput('twaMin', v => { this.coords.twaMin = v; });
-    axisInput('twaMax', v => { this.coords.twaMax = v; });
-    axisInput('twsMin', v => { this.coords.twsMin = v; });
-    axisInput('twsMax', v => { this.coords.twsMax = v; });
+    axisInput('twaMin', v => { this.coords.twaMin = v; this.store.chartSettings.twaMin = v; });
+    axisInput('twaMax', v => { this.coords.twaMax = v; this.store.chartSettings.twaMax = v; });
+    axisInput('twsMin', v => { this.coords.twsMin = v; this.store.chartSettings.twsMin = v; });
+    axisInput('twsMax', v => { this.coords.twsMax = v; this.store.chartSettings.twsMax = v; });
 
-    // ── Stroke widths ────────────────────────────────────────────────────────
+    // ── Stroke widths ─────────────────────────────────────────────────────────
     const strokeSlider = (id: string, valId: string, setter: (v: number) => void) => {
       const el  = document.getElementById(id)    as HTMLInputElement;
       const val = document.getElementById(valId)!;
       el?.addEventListener('input', () => {
-        const v = Number(el.value);
-        setter(v);
+        setter(Number(el.value));
         val.textContent = el.value;
+        this.store.save();
         this.bgRend.draw();
       });
     };
-    strokeSlider('vmgStroke',  'vmgStrokeVal',  v => { this.bgRend.vmgStrokeWidth  = v; });
-    strokeSlider('awsStroke',  'awsStrokeVal',  v => { this.bgRend.awsStrokeWidth  = v; });
-    strokeSlider('axisStroke', 'axisStrokeVal', v => { this.bgRend.axisStrokeScale = v; });
+    strokeSlider('vmgStroke',  'vmgStrokeVal',  v => { this.bgRend.vmgStrokeWidth  = v; this.store.chartSettings.vmgStrokeWidth  = v; });
+    strokeSlider('awsStroke',  'awsStrokeVal',  v => { this.bgRend.awsStrokeWidth  = v; this.store.chartSettings.awsStrokeWidth  = v; });
+    strokeSlider('axisStroke', 'axisStrokeVal', v => { this.bgRend.axisStrokeScale = v; this.store.chartSettings.axisStrokeScale = v; });
 
-    // ── Canvas resolution ────────────────────────────────────────────────────
+    // ── Canvas resolution ─────────────────────────────────────────────────────
     const resSelect = document.getElementById('canvasRes') as HTMLSelectElement;
     resSelect?.addEventListener('change', () => {
       this.resolution = Number(resSelect.value);
+      this.store.chartSettings.resolution = this.resolution;
+      this.store.save();
       this._applySize(this.lastAreaW, this.lastAreaH);
     });
 
+    // ── File I/O ──────────────────────────────────────────────────────────────
     this._btn('btnLoadXML', () => (document.getElementById('fileInput') as HTMLInputElement).click());
     this._btn('btnSaveXML', () => {
       this._download(
@@ -282,6 +305,7 @@ export class App implements AppActions {
       reader.onload = ev => {
         try {
           this.store.fromXML(ev.target!.result as string);
+          this._applySettings(this.store.chartSettings);
           this.selectSail(null);
           this.sidebar.renderList();
           this.sidebar.updateUndoButtons();
@@ -293,6 +317,46 @@ export class App implements AppActions {
       reader.readAsText(file);
       fileInput.value = '';
     });
+  }
+
+  // ── Apply chart settings to renderers + sync all UI controls ─────────────────
+  private _applySettings(s: import('./model/types.js').ChartSettings): void {
+    this.bgRend.bgColor         = s.bgColor;
+    this.bgRend.fontSize        = s.fontSize;
+    this.bgRend.smoothing       = s.smoothing;
+    this.bgRend.vmgStrokeWidth  = s.vmgStrokeWidth;
+    this.bgRend.awsStrokeWidth  = s.awsStrokeWidth;
+    this.bgRend.axisStrokeScale = s.axisStrokeScale;
+    this.bgRend.showAWS         = s.showAWS && this.bgRend.polar !== null;
+    this.coords.twaMin          = s.twaMin;
+    this.coords.twaMax          = s.twaMax;
+    this.coords.twsMin          = s.twsMin;
+    this.coords.twsMax          = s.twsMax;
+    this.resolution             = s.resolution;
+
+    const set = <T extends HTMLInputElement | HTMLSelectElement>(id: string, v: string) => {
+      const el = document.getElementById(id) as T | null;
+      if (el) el.value = v;
+    };
+    const setText = (id: string, v: string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v;
+    };
+
+    set('bgColor',       s.bgColor);
+    set('smoothingRange', String(s.smoothing));    setText('smoothingVal',  String(s.smoothing));
+    setText('fontSizeVal',   String(s.fontSize));
+    set('vmgStroke',     String(s.vmgStrokeWidth)); setText('vmgStrokeVal',  String(s.vmgStrokeWidth));
+    set('awsStroke',     String(s.awsStrokeWidth)); setText('awsStrokeVal',  String(s.awsStrokeWidth));
+    set('axisStroke',    String(s.axisStrokeScale));setText('axisStrokeVal', String(s.axisStrokeScale));
+    set('twaMin', String(s.twaMin)); set('twaMax', String(s.twaMax));
+    set('twsMin', String(s.twsMin)); set('twsMax', String(s.twsMax));
+    set('canvasRes', String(s.resolution));
+
+    const awsTog = document.getElementById('toggleAWS') as HTMLInputElement | null;
+    if (awsTog) awsTog.checked = this.bgRend.showAWS;
+
+    this._applySize(this.lastAreaW, this.lastAreaH);
   }
 
   // ── Cursor / status bar ───────────────────────────────────────────────────────
