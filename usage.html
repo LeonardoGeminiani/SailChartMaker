@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sail Chart — Usage Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Azeret+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/docs.css">
+</head>
+<body>
+
+<header class="site-header">
+  <a class="brand-link" href="index.html">
+    <svg class="brand-icon" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-width="1"/>
+      <path d="M14 2 L16 12 L26 14 L16 16 L14 26 L12 16 L2 14 L12 12 Z" fill="currentColor" opacity="0.9"/>
+      <circle cx="14" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1"/>
+    </svg>
+    <div>
+      <div class="brand-title">Sail Chart</div>
+      <div class="brand-sub">Usage Guide</div>
+    </div>
+  </a>
+  <nav class="site-nav">
+    <a href="index.html" class="nav-link">App</a>
+    <a href="usage.html" class="nav-link active">Guide</a>
+  </nav>
+</header>
+
+<main class="page">
+  <nav class="toc" id="toc" aria-label="Table of contents">
+    <div class="toc-title">Contents</div>
+    <ol id="tocList"></ol>
+  </nav>
+  <div id="content"><p class="state-msg">Loading…</p></div>
+</main>
+
+<script type="module" src="src/usage.ts"></script>
+</body>
+</html>
