@@ -594,6 +594,31 @@ export class App implements AppActions {
     document.getElementById(id)?.addEventListener('click', fn);
   }
 
+  private _exportPDF(): void {
+    const canvas = this.sailRend.exportWith(this.bgCanvas);
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    // Determine orientation from canvas aspect ratio
+    const landscape = canvas.width >= canvas.height;
+    const pdf = new jsPDF({
+      orientation: landscape ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    // Fit image to page with uniform margins
+    const margin = 10;
+    const maxW = pageW - margin * 2;
+    const maxH = pageH - margin * 2;
+    const scale = Math.min(maxW / canvas.width, maxH / canvas.height);
+    const imgW = canvas.width  * scale;
+    const imgH = canvas.height * scale;
+    const x = (pageW - imgW) / 2;
+    const y = (pageH - imgH) / 2;
+    pdf.addImage(imgData, 'JPEG', x, y, imgW, imgH);
+    pdf.save('SailChart.pdf');
+  }
+
   private _download(href: string, filename: string): void {
     const a = document.createElement('a');
     a.href = href; a.download = filename; a.click();

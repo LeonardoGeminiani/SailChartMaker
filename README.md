@@ -93,7 +93,7 @@ Free-floating text labels can be placed anywhere on the chart. Click **+ Add** i
 | **Save XML** | Download the chart as an XML file |
 | **Load XML** | Open a previously saved XML file |
 | **Export PNG** | Download the chart as a flat PNG image |
-| **Print** | Print the chart area only (sidebar/toolbar hidden) |
+| **Export PDF** | Download the chart as an A4 PDF, fitted with margins |
 
 Changes are automatically saved to your browser's local storage — your work persists across page refreshes.
 
