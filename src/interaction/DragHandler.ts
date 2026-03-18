@@ -1,7 +1,7 @@
-import { SailData, SailPoint, LabelAnnotation } from '../model/types.js';
+import { SailData, SailPoint, LabelAnnotation, ChartSpline } from '../model/types.js';
 import { CoordinateSystem } from '../canvas/CoordinateSystem.js';
 
-export type DragType = 'point' | 'shape' | 'label' | 'annotation';
+export type DragType = 'point' | 'shape' | 'label' | 'annotation' | 'splinepoint' | 'splinemove';
 
 interface PointDrag {
   type: 'point';
@@ -40,7 +40,22 @@ interface AnnotationDrag {
   hitOffsetY: number;
 }
 
-type DragState = PointDrag | ShapeDrag | LabelDrag | AnnotationDrag;
+interface SplinePointDrag {
+  type: 'splinepoint';
+  splineId: number;
+  pointIndex: number;
+  startPx: number; startPy: number;
+  originX: number; originY: number;
+}
+
+interface SplineMoveDrag {
+  type: 'splinemove';
+  splineId: number;
+  startPx: number; startPy: number;
+  origPoints: SailPoint[];
+}
+
+type DragState = PointDrag | ShapeDrag | LabelDrag | AnnotationDrag | SplinePointDrag | SplineMoveDrag;
 
 // ── DragHandler ───────────────────────────────────────────────────────────────
 export class DragHandler {
@@ -96,7 +111,7 @@ export class DragHandler {
       });
     } else {
       // label drag — update labelOffset relative to centroid
-      const { hitOffsetX, hitOffsetY } = this.state;
+      const { hitOffsetX, hitOffsetY } = this.state as LabelDrag;
       const [lx, ly] = this.coords.fromPixel(px + hitOffsetX, py + hitOffsetY);
       const [clx, cly] = this.coords.clamp(lx, ly);
       const cx = sail.points.reduce((a, p) => a + p.x, 0) / sail.points.length;
@@ -123,14 +138,48 @@ export class DragHandler {
     ann.y = cy;
   }
 
+  startSplinePointDrag(splineId: number, ptIdx: number, px: number, py: number, ox: number, oy: number): void {
+    this.state = { type: 'splinepoint', splineId, pointIndex: ptIdx, startPx: px, startPy: py, originX: ox, originY: oy };
+  }
+
+  startSplineMoveDrag(splineId: number, px: number, py: number, origPoints: SailPoint[]): void {
+    this.state = { type: 'splinemove', splineId, startPx: px, startPy: py, origPoints: origPoints.map(p => ({ ...p })) };
+  }
+
+  applySpline(px: number, py: number, sp: ChartSpline): void {
+    if (!this.state) return;
+    if (this.state.type === 'splinepoint') {
+      const { pointIndex, originX, originY, startPx, startPy } = this.state;
+      const [opx, opy] = this.coords.toPixel(originX, originY);
+      const [nx, ny]   = this.coords.fromPixel(opx + (px - startPx), opy + (py - startPy));
+      const [cx, cy]   = this.coords.clamp(nx, ny);
+      sp.points[pointIndex] = { x: cx, y: cy };
+    } else if (this.state.type === 'splinemove') {
+      const { origPoints, startPx, startPy } = this.state;
+      const ddx = px - startPx, ddy = py - startPy;
+      sp.points = origPoints.map(pt => {
+        const [opx, opy] = this.coords.toPixel(pt.x, pt.y);
+        const [nx, ny]   = this.coords.fromPixel(opx + ddx, opy + ddy);
+        const [cx, cy]   = this.coords.clamp(nx, ny);
+        return { x: cx, y: cy };
+      });
+    }
+  }
+
   end(): void { this.state = null; }
 
   get isDragging(): boolean { return this.state !== null; }
   get dragType(): DragType | null { return this.state?.type ?? null; }
 
   get sailId(): number | null {
-    if (!this.state || this.state.type === 'annotation') return null;
-    return this.state.sailId;
+    if (!this.state || this.state.type === 'annotation' || this.state.type === 'splinepoint' || this.state.type === 'splinemove') return null;
+    return (this.state as PointDrag | ShapeDrag | LabelDrag).sailId;
+  }
+
+  get splineId(): number | null {
+    if (this.state?.type === 'splinepoint' || this.state?.type === 'splinemove')
+      return (this.state as SplinePointDrag | SplineMoveDrag).splineId;
+    return null;
   }
 
   get annotationId(): number | null {

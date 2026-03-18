@@ -47,6 +47,18 @@ export class InputController {
           return;
         }
       }
+
+      // 0b. Hit a control point on the selected spline?
+      const selSp = this.store.findSpline(this.store.selectedSplineId);
+      if (selSp) {
+        const idx = this.hitTester.hitSplinePoint(px, py, selSp);
+        if (idx >= 0) {
+          this.store.pushUndo();
+          this.drag.startSplinePointDrag(selSp.id, idx, px, py, selSp.points[idx].x, selSp.points[idx].y);
+          return;
+        }
+      }
+
       // 1. Hit a control point on the selected sail?
       const sel = this.store.find(this.store.selectedId);
       if (sel) {
@@ -74,44 +86,85 @@ export class InputController {
         this.actions.selectSail(hit.id);
         this.store.pushUndo();
         this.drag.startShapeDrag(hit.id, px, py, hit.points);
-      } else {
-        this.actions.selectSail(null);
+        return;
       }
+      // 3b. Hit a spline body?
+      const hitSp = this.hitTester.hitSpline(px, py);
+      if (hitSp) {
+        this.actions.selectSpline(hitSp.id);
+        this.store.pushUndo();
+        this.drag.startSplineMoveDrag(hitSp.id, px, py, hitSp.points);
+        return;
+      }
+      // Nothing hit — deselect
+      this.actions.selectSail(null);
+      this.actions.selectSpline(null);
       return;
     }
 
     if (mode === 'addpt') {
       const sailId = this.store.selectedId;
-      if (sailId === null) return;
-      const s = this.store.find(sailId);
-      if (!s) return;
-      const [dx, dy] = this.coords.fromPixel(px, py);
+      if (sailId !== null) {
+        const s = this.store.find(sailId);
+        if (!s) return;
+        const [dx, dy] = this.coords.fromPixel(px, py);
 
-      // Find best insertion edge (closest midpoint)
-      let best = s.points.length, bestD = Infinity;
-      for (let i = 0; i < s.points.length; i++) {
-        const a = s.points[i];
-        const b = s.points[(i + 1) % s.points.length];
-        const [mpx, mpy] = this.coords.toPixel((a.x + b.x) / 2, (a.y + b.y) / 2);
-        const d = Math.hypot(px - mpx, py - mpy);
-        if (d < bestD) { bestD = d; best = i + 1; }
+        // Find best insertion edge (closest midpoint)
+        let best = s.points.length, bestD = Infinity;
+        for (let i = 0; i < s.points.length; i++) {
+          const a = s.points[i];
+          const b = s.points[(i + 1) % s.points.length];
+          const [mpx, mpy] = this.coords.toPixel((a.x + b.x) / 2, (a.y + b.y) / 2);
+          const d = Math.hypot(px - mpx, py - mpy);
+          if (d < bestD) { bestD = d; best = i + 1; }
+        }
+
+        const [cx, cy] = this.coords.clamp(dx, dy);
+        this.store.addPoint(sailId, best, { x: cx, y: cy });
+        this.actions.redraw();
+        return;
       }
-
-      const [cx, cy] = this.coords.clamp(dx, dy);
-      this.store.addPoint(sailId, best, { x: cx, y: cy });
-      this.actions.redraw();
+      const splineId = this.store.selectedSplineId;
+      if (splineId !== null) {
+        const sp = this.store.findSpline(splineId);
+        if (!sp) return;
+        const [dx, dy] = this.coords.fromPixel(px, py);
+        let best = sp.points.length, bestD = Infinity;
+        for (let i = 0; i < sp.points.length - 1; i++) {
+          const a = sp.points[i], b = sp.points[i + 1];
+          const [mpx, mpy] = this.coords.toPixel((a.x + b.x) / 2, (a.y + b.y) / 2);
+          const d = Math.hypot(px - mpx, py - mpy);
+          if (d < bestD) { bestD = d; best = i + 1; }
+        }
+        const [cx, cy] = this.coords.clamp(dx, dy);
+        this.store.addSplinePoint(splineId, best, { x: cx, y: cy });
+        this.actions.redraw();
+        return;
+      }
       return;
     }
 
     if (mode === 'delpt') {
       const sailId = this.store.selectedId;
-      if (sailId === null) return;
-      const s = this.store.find(sailId);
-      if (!s || s.points.length <= 3) return;
-      const idx = this.hitTester.hitPoint(px, py, s);
-      if (idx >= 0) {
-        this.store.removePoint(sailId, idx);
-        this.actions.redraw();
+      if (sailId !== null) {
+        const s = this.store.find(sailId);
+        if (!s || s.points.length <= 3) return;
+        const idx = this.hitTester.hitPoint(px, py, s);
+        if (idx >= 0) {
+          this.store.removePoint(sailId, idx);
+          this.actions.redraw();
+        }
+        return;
+      }
+      const splineId = this.store.selectedSplineId;
+      if (splineId !== null) {
+        const sp = this.store.findSpline(splineId);
+        if (!sp || sp.points.length <= 2) return;
+        const idx = this.hitTester.hitSplinePoint(px, py, sp);
+        if (idx >= 0) {
+          this.store.removeSplinePoint(splineId, idx);
+          this.actions.redraw();
+        }
       }
     }
   }
@@ -133,6 +186,9 @@ export class InputController {
       if (this.drag.dragType === 'annotation') {
         const a = this.store.findAnnotation(this.drag.annotationId);
         if (a) { this.drag.applyAnnotation(px, py, a); this.actions.redraw(); }
+      } else if (this.drag.dragType === 'splinepoint' || this.drag.dragType === 'splinemove') {
+        const sp = this.store.findSpline(this.drag.splineId);
+        if (sp) { this.drag.applySpline(px, py, sp); this.actions.redraw(); }
       } else {
         const s = this.store.find(this.drag.sailId);
         if (s) { this.drag.apply(px, py, s); this.actions.redraw(); }
@@ -148,6 +204,9 @@ export class InputController {
     if (this.drag.isDragging) {
       if (this.drag.dragType === 'annotation') {
         this.store.save();
+      } else if (this.drag.dragType === 'splinepoint' || this.drag.dragType === 'splinemove') {
+        const sp = this.store.findSpline(this.drag.splineId);
+        if (sp) this.store.save();
       } else {
         const s = this.store.find(this.drag.sailId);
         if (s) this.store.save();
@@ -164,7 +223,7 @@ export class InputController {
     if (k === 'v') { this.actions.setMode('select'); return; }
     if (k === 'a') { this.actions.setMode('addpt');  return; }
     if (k === 'd') { this.actions.setMode('delpt');  return; }
-    if (k === 'escape')                           { this.actions.selectSail(null); return; }
+    if (k === 'escape')                           { this.actions.selectSail(null); this.actions.selectSpline(null); return; }
     if (k === 'delete' || k === 'backspace')      { this.actions.deleteSelected(); return; }
 
     const mod = e.ctrlKey || e.metaKey;
@@ -181,6 +240,10 @@ export class InputController {
       if (s && this.hitTester.hitPoint(px, py, s) >= 0) {
         this.canvas.style.cursor = 'not-allowed'; return;
       }
+      const sp = this.store.findSpline(this.store.selectedSplineId);
+      if (sp && this.hitTester.hitSplinePoint(px, py, sp) >= 0) {
+        this.canvas.style.cursor = 'not-allowed'; return;
+      }
       this.canvas.style.cursor = 'default'; return;
     }
     // Annotation hit check
@@ -189,6 +252,11 @@ export class InputController {
       if (Math.hypot(px - apx, py - apy) <= LABEL_HIT_R) {
         this.canvas.style.cursor = 'grab'; return;
       }
+    }
+    // Spline handle hit check
+    const selSp = this.store.findSpline(this.store.selectedSplineId);
+    if (selSp && this.hitTester.hitSplinePoint(px, py, selSp) >= 0) {
+      this.canvas.style.cursor = 'grab'; return;
     }
     const s = this.store.find(this.store.selectedId);
     if (s && this.hitTester.hitPoint(px, py, s) >= 0) { this.canvas.style.cursor = 'grab'; return; }
@@ -200,7 +268,9 @@ export class InputController {
         this.canvas.style.cursor = 'grab'; return;
       }
     }
-    this.canvas.style.cursor = this.hitTester.hitSail(px, py) ? 'move' : 'default';
+    if (this.hitTester.hitSail(px, py)) { this.canvas.style.cursor = 'move'; return; }
+    if (this.hitTester.hitSpline(px, py)) { this.canvas.style.cursor = 'move'; return; }
+    this.canvas.style.cursor = 'default';
   }
 
   private _pos(e: PointerEvent): [number, number] {

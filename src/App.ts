@@ -56,6 +56,8 @@ export class App implements AppActions {
       id => this.selectSail(id),
       ()  => this.deleteSelected(),
       ()  => this.redraw(),
+      id  => this.selectSpline(id),
+      ()  => this.deleteSelected(),
     );
 
     this.modal = new AddSailModal(this.store, sail => {
@@ -87,8 +89,10 @@ export class App implements AppActions {
     }).observe(area);
 
     this.sidebar.setupEditorListeners();
+    this.sidebar.setupSplineEditorListeners();
     this.sidebar.renderList();
     this.sidebar.renderAnnotations();
+    this.sidebar.renderSplines();
     this.sidebar.updateUndoButtons();
     this.modal.setup();
     this.input.setup();
@@ -101,14 +105,33 @@ export class App implements AppActions {
   // ── AppActions ───────────────────────────────────────────────────────────────
   selectSail(id: number | null): void {
     this.store.select(id);
-    this.sidebar.renderList();
     if (id !== null) {
+      this.store.selectSpline(null);
+      this.sidebar.closeSplineEditor();
+      this.sailRend.selectedSplineId = null;
       const s = this.store.find(id);
       this.sidebar.openEditor(s?.name ?? '');
       this.sidebar.syncEditor();
     } else {
       this.sidebar.closeEditor();
     }
+    this.sidebar.renderList();
+    this.redraw();
+  }
+
+  selectSpline(id: number | null): void {
+    this.store.selectSpline(id);
+    if (id !== null) {
+      this.store.select(null);           // deselect sail
+      this.sidebar.closeEditor();
+      const sp = this.store.findSpline(id);
+      this.sidebar.openSplineEditor(sp?.name ?? '');
+      this.sidebar.syncSplineEditor();
+    } else {
+      this.sidebar.closeSplineEditor();
+    }
+    this.sailRend.selectedSplineId = id;
+    this.sidebar.renderSplines();
     this.redraw();
   }
 
@@ -130,6 +153,14 @@ export class App implements AppActions {
   }
 
   deleteSelected(): void {
+    if (this.store.selectedSplineId !== null) {
+      this.store.removeSpline(this.store.selectedSplineId);
+      this.selectSpline(null);
+      this.sidebar.renderSplines();
+      this.sidebar.updateUndoButtons();
+      this.redraw();
+      return;
+    }
     if (this.store.selectedId === null) return;
     this.store.remove(this.store.selectedId);
     this.selectSail(null);
@@ -142,7 +173,10 @@ export class App implements AppActions {
       this.selectSail(this.store.selectedId);
       this.sidebar.renderList();
       this.sidebar.renderAnnotations();
+      this.sidebar.renderSplines();
       this.sidebar.updateUndoButtons();
+      this.sailRend.selectedSplineId = this.store.selectedSplineId;
+      if (this.store.selectedSplineId !== null) this.sidebar.syncSplineEditor();
       this.redraw();
     }
   }
@@ -152,7 +186,10 @@ export class App implements AppActions {
       this.selectSail(this.store.selectedId);
       this.sidebar.renderList();
       this.sidebar.renderAnnotations();
+      this.sidebar.renderSplines();
       this.sidebar.updateUndoButtons();
+      this.sailRend.selectedSplineId = this.store.selectedSplineId;
+      if (this.store.selectedSplineId !== null) this.sidebar.syncSplineEditor();
       this.redraw();
     }
   }
@@ -176,6 +213,18 @@ export class App implements AppActions {
       const cy = (this.coords.twsMin + this.coords.twsMax) / 2;
       this.store.addAnnotation('Label', cx, cy);
       this.sidebar.renderAnnotations();
+      this.redraw();
+    });
+
+    // ── Add spline ────────────────────────────────────────────────────────────
+    this._btn('btnAddSpline', () => {
+      const sp = this.store.addSpline({
+        twaMin: this.coords.twaMin, twaMax: this.coords.twaMax,
+        twsMin: this.coords.twsMin, twsMax: this.coords.twsMax,
+      });
+      this.selectSpline(sp.id);
+      this.sidebar.renderSplines();
+      this.sidebar.updateUndoButtons();
       this.redraw();
     });
 
@@ -216,7 +265,7 @@ export class App implements AppActions {
     const legendToggle = document.getElementById('toggleLegend') as HTMLInputElement | null;
     legendToggle?.addEventListener('change', () => {
       const show = legendToggle.checked;
-      this.coords.legendWidth      = show ? App.LEGEND_W : 0;
+      this.coords.legendWidth      = show ? App.LEGEND_W / (window.devicePixelRatio || 1) : 0;
       this.bgRend.showLegend       = show;
       this.sailRend.showLegend     = show;
       this.store.chartSettings.showLegend = show;
@@ -395,8 +444,10 @@ export class App implements AppActions {
           this.store.fromXML(ev.target!.result as string);
           this._applySettings(this.store.chartSettings);
           this.selectSail(null);
+          this.selectSpline(null);
           this.sidebar.renderList();
           this.sidebar.renderAnnotations();
+          this.sidebar.renderSplines();
           this.sidebar.updateUndoButtons();
           this.redraw();
         } catch (err) {
@@ -426,7 +477,7 @@ export class App implements AppActions {
     this.coords.twsMin          = s.twsMin;
     this.coords.twsMax          = s.twsMax;
     this.coords.twsReversed     = s.twsReversed ?? false;
-    this.coords.legendWidth  = (s.showLegend ?? false) ? App.LEGEND_W : 0;
+    this.coords.legendWidth  = (s.showLegend ?? false) ? App.LEGEND_W / (window.devicePixelRatio || 1) : 0;
     this.bgRend.showLegend   = s.showLegend ?? false;
     this.sailRend.showLegend = s.showLegend ?? false;
     this.coords.setMargin(s.chartMargin ?? 0);
@@ -524,6 +575,8 @@ export class App implements AppActions {
     this.bgRend.resolution   = effectiveRes;
     this.sailRend.resolution = effectiveRes;
     this.hitTest.resolution  = effectiveRes;
+    // legendWidth in _px units (= LEGEND_W physical px) so it stays zoom-stable
+    if (this.bgRend.showLegend) this.coords.legendWidth = App.LEGEND_W / dpr;
     this.bgRend.resize(w, h);
     this.sailRend.resize(w, h);
     this.redraw();

@@ -1,15 +1,18 @@
-import { FillPattern } from '../model/types.js';
+import { FillPattern, ChartSpline } from '../model/types.js';
 import { SailStore } from '../model/SailStore.js';
 
 // ── SidebarPanel ──────────────────────────────────────────────────────────────
 export class SidebarPanel {
   private editDirty = false;
+  private splineEditDirty = false;
 
   constructor(
     private readonly store: SailStore,
     private readonly onSelect: (id: number | null) => void,
     private readonly onDelete: () => void,
     private readonly onRedraw: () => void,
+    private readonly onSelectSpline: (id: number) => void,
+    private readonly onDeleteSpline: () => void,
   ) {}
 
   // ── Sail list ───────────────────────────────────────────────────────────────
@@ -169,6 +172,83 @@ export class SidebarPanel {
     edPatternDash.addEventListener('input',  () => { onFirst(); this._applyEdit(); });
 
     document.getElementById('btnDelSail')!.addEventListener('click', () => this.onDelete());
+  }
+
+  // ── Spline list & editor ─────────────────────────────────────────────────────
+  renderSplines(): void {
+    const list = document.getElementById('splineList');
+    if (!list) return;
+    list.innerHTML = '';
+    for (const sp of this.store.splines) {
+      const item = document.createElement('div');
+      item.className = 'ann-item';
+      item.innerHTML = `
+        <div class="swatch" style="background:${sp.color};border-color:rgba(0,0,0,0.12);width:12px;height:12px;flex-shrink:0"></div>
+        <span class="sail-name" style="flex:1;font-size:0.85em;cursor:pointer">${this._esc(sp.name)}</span>
+        <button class="ann-del" title="Remove spline">×</button>`;
+      item.querySelector('.ann-del')!.addEventListener('click', e => {
+        e.stopPropagation();
+        this.store.removeSpline(sp.id);
+        this.renderSplines();
+        this.onRedraw();
+      });
+      item.addEventListener('click', () => this.onSelectSpline(sp.id));
+      list.appendChild(item);
+    }
+  }
+
+  openSplineEditor(name: string): void {
+    const ed = document.getElementById('splineEditor')!;
+    ed.classList.add('open');
+    ed.setAttribute('aria-hidden', 'false');
+    document.getElementById('spEdTitle')!.textContent = name;
+  }
+
+  closeSplineEditor(): void {
+    const ed = document.getElementById('splineEditor')!;
+    if (!ed) return;
+    ed.classList.remove('open');
+    ed.setAttribute('aria-hidden', 'true');
+  }
+
+  syncSplineEditor(): void {
+    const sp = this.store.findSpline(this.store.selectedSplineId);
+    if (!sp) return;
+    (document.getElementById('spEdName')    as HTMLInputElement).value  = sp.name;
+    (document.getElementById('spEdColor')   as HTMLInputElement).value  = sp.color;
+    (document.getElementById('spEdWidth')   as HTMLInputElement).value  = String(sp.strokeWidth);
+    (document.getElementById('spEdStroke')  as HTMLSelectElement).value = sp.stroke;
+    document.getElementById('spEdTitle')!.textContent = sp.name;
+    this.splineEditDirty = false;
+  }
+
+  setupSplineEditorListeners(): void {
+    const onFirst = () => {
+      if (!this.splineEditDirty) { this.store.pushUndo(); this.splineEditDirty = true; }
+    };
+    const apply = () => this._applySplineEdit();
+
+    document.getElementById('spEdName')?.addEventListener('focus', () => { this.splineEditDirty = false; });
+    document.getElementById('spEdName')?.addEventListener('input', () => { onFirst(); apply(); });
+    document.getElementById('spEdColor')?.addEventListener('change', () => { this.store.pushUndo(); apply(); });
+    document.getElementById('spEdColor')?.addEventListener('input', () => apply());
+    document.getElementById('spEdWidth')?.addEventListener('focus', () => { this.splineEditDirty = false; });
+    document.getElementById('spEdWidth')?.addEventListener('input', () => { onFirst(); apply(); });
+    document.getElementById('spEdStroke')?.addEventListener('change', () => { onFirst(); apply(); });
+    document.getElementById('btnDelSpline')?.addEventListener('click', () => this.onDeleteSpline());
+  }
+
+  private _applySplineEdit(): void {
+    const sp = this.store.findSpline(this.store.selectedSplineId);
+    if (!sp) return;
+    sp.name        = (document.getElementById('spEdName')   as HTMLInputElement).value;
+    sp.color       = (document.getElementById('spEdColor')  as HTMLInputElement).value;
+    sp.strokeWidth = Math.max(0.5, parseFloat((document.getElementById('spEdWidth') as HTMLInputElement).value) || 2);
+    sp.stroke      = (document.getElementById('spEdStroke') as HTMLSelectElement).value as import('../model/types.js').SplineStroke;
+    this.store.save();
+    document.getElementById('spEdTitle')!.textContent = sp.name || 'Edit Spline';
+    this.renderSplines();
+    this.onRedraw();
   }
 
   // ── Private ──────────────────────────────────────────────────────────────────

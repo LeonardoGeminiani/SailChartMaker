@@ -139,6 +139,41 @@
       </div>
       <div class="ann-list" id="annotationList"></div>
 
+      <div class="sidebar-hd sidebar-hd--sub">
+        <span>Splines</span>
+        <button id="btnAddSpline" class="btn-small">+ Add</button>
+      </div>
+      <div class="ann-list" id="splineList"></div>
+      <div class="editor" id="splineEditor" aria-hidden="true">
+        <div class="editor-hd" id="spEdTitle">Edit Spline</div>
+        <label class="field">
+          <span class="field-label">Name</span>
+          <input type="text" id="spEdName" autocomplete="off" spellcheck="false">
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Color</span>
+            <input type="color" id="spEdColor">
+          </label>
+          <label class="field">
+            <span class="field-label">Width</span>
+            <input type="number" id="spEdWidth" min="0.5" max="8" step="0.5" value="2">
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Stroke style</span>
+          <select id="spEdStroke" class="ratio-select">
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+            <option value="dashdot">Dash · dot</option>
+            <option value="finedash">Fine dash</option>
+            <option value="longdash">Long dash</option>
+          </select>
+        </label>
+        <button id="btnDelSpline" class="btn-danger">Delete Spline</button>
+      </div>
+
       <div class="hint-box" id="hintBox">
         <span id="hintText">Click a sail to select it · <kbd>V</kbd> <kbd>A</kbd> <kbd>D</kbd></span>
       </div>

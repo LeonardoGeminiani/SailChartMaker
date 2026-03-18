@@ -1,4 +1,4 @@
-import { SailData, SailPoint, FillPattern, ChartSettings, LabelAnnotation } from './types.js';
+import { SailData, SailPoint, FillPattern, ChartSettings, LabelAnnotation, ChartSpline, SplineStroke } from './types.js';
 import { UndoManager } from './UndoManager.js';
 
 // ── Chart domain constants ────────────────────────────────────────────────────
@@ -44,8 +44,10 @@ const DEFAULT_DEFS: SailDef[] = [
 interface StoreState {
   sails: SailData[];
   annotations: LabelAnnotation[];
+  splines: ChartSpline[];
   nextId: number;
   nextAnnId: number;
+  nextSplineId: number;
 }
 
 const DEFAULT_CHART_SETTINGS: ChartSettings = {
@@ -59,6 +61,7 @@ const DEFAULT_CHART_SETTINGS: ChartSettings = {
 export class SailStore {
   private _state: StoreState;
   private _selectedId: number | null = null;
+  private _selectedSplineId: number | null = null;
   private readonly _undo = new UndoManager<StoreState>();
 
   chartSettings: ChartSettings = { ...DEFAULT_CHART_SETTINGS };
@@ -70,7 +73,9 @@ export class SailStore {
   // ── Accessors ───────────────────────────────────────────────────────────────
   get sails(): SailData[]                  { return this._state.sails; }
   get annotations(): LabelAnnotation[]    { return this._state.annotations; }
+  get splines(): ChartSpline[]             { return this._state.splines; }
   get selectedId(): number | null          { return this._selectedId; }
+  get selectedSplineId(): number | null    { return this._selectedSplineId; }
 
   find(id: number | null): SailData | null {
     if (id === null) return null;
@@ -82,7 +87,13 @@ export class SailStore {
     return this._state.annotations.find(a => a.id === id) ?? null;
   }
 
+  findSpline(id: number | null): ChartSpline | null {
+    if (id === null) return null;
+    return this._state.splines.find(s => s.id === id) ?? null;
+  }
+
   select(id: number | null): void { this._selectedId = id; }
+  selectSpline(id: number | null): void { this._selectedSplineId = id; }
 
   // ── Undo/Redo ───────────────────────────────────────────────────────────────
   get canUndo(): boolean { return this._undo.canUndo; }
@@ -194,6 +205,52 @@ export class SailStore {
     this.save();
   }
 
+  // ── Spline CRUD ───────────────────────────────────────────────────────────
+  addSpline(coords: { twaMin: number; twaMax: number; twsMin: number; twsMax: number }): ChartSpline {
+    this.pushUndo();
+    const cx = (coords.twaMin + coords.twaMax) / 2;
+    const cy = (coords.twsMin + coords.twsMax) / 2;
+    const spline: ChartSpline = {
+      id: this._state.nextSplineId++,
+      name: 'Spline',
+      color: '#e05020',
+      strokeWidth: 2,
+      stroke: 'dashed',
+      visible: true,
+      points: [
+        { x: cx - 20, y: cy - 3 },
+        { x: cx,      y: cy + 3  },
+        { x: cx + 20, y: cy - 3 },
+      ],
+    };
+    this._state.splines.push(spline);
+    this.save();
+    return spline;
+  }
+
+  removeSpline(id: number): void {
+    this.pushUndo();
+    this._state.splines = this._state.splines.filter(s => s.id !== id);
+    if (this._selectedSplineId === id) this._selectedSplineId = null;
+    this.save();
+  }
+
+  addSplinePoint(id: number, index: number, point: SailPoint): void {
+    const sp = this.findSpline(id);
+    if (!sp) return;
+    this.pushUndo();
+    sp.points.splice(index, 0, point);
+    this.save();
+  }
+
+  removeSplinePoint(id: number, index: number): void {
+    const sp = this.findSpline(id);
+    if (!sp || sp.points.length <= 2) return;
+    this.pushUndo();
+    sp.points.splice(index, 1);
+    this.save();
+  }
+
   reset(): void {
     this.pushUndo();
     this._state = this._defaults();
@@ -224,8 +281,10 @@ export class SailStore {
           return {
             sails: data.sails,
             annotations: data.annotations ?? [],
+            splines: (data as any).splines ?? [],
             nextId: data.nextId,
             nextAnnId: data.nextAnnId ?? 1,
+            nextSplineId: (data as any).nextSplineId ?? 1,
           };
         }
       }
@@ -240,7 +299,7 @@ export class SailStore {
       opacity: 0.62, visible: true, showFill: true, fillPattern: 'none' as FillPattern, patternDash: 4, showLabel: true,
       points: makeOval(d.ox, d.oy, d.rx, d.ry),
     }));
-    return { sails, annotations: [], nextId, nextAnnId: 1 };
+    return { sails, annotations: [], splines: [], nextId, nextAnnId: 1, nextSplineId: 1 };
   }
 
   private _clone(): StoreState {
@@ -272,6 +331,10 @@ export class SailStore {
     }
     for (const a of this._state.annotations) {
       xml += `  <Label id="${a.id}" text="${escXml(a.text)}" x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}" color="${a.color}"/>\n`;
+    }
+    for (const sp of this._state.splines) {
+      const pts = sp.points.map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ');
+      xml += `  <Spline id="${sp.id}" name="${escXml(sp.name)}" color="${sp.color}" strokeWidth="${sp.strokeWidth}" stroke="${sp.stroke}" visible="${sp.visible}" points="${pts}"/>\n`;
     }
     return xml + '</SailChart>';
   }
@@ -359,8 +422,30 @@ export class SailStore {
       });
     });
 
-    this._state = { sails, annotations, nextId, nextAnnId };
+    const splines: ChartSpline[] = [];
+    let nextSplineId = 1;
+    doc.querySelectorAll('Spline').forEach(n => {
+      const ptsStr = n.getAttribute('points') ?? '';
+      const points = ptsStr.trim() ? ptsStr.trim().split(/\s+/).map(pair => {
+        const [x, y] = pair.split(',').map(Number);
+        return { x, y };
+      }).filter(p => !isNaN(p.x) && !isNaN(p.y)) : [];
+      if (points.length >= 2) {
+        splines.push({
+          id: nextSplineId++,
+          name:        n.getAttribute('name')        ?? 'Spline',
+          color:       n.getAttribute('color')       ?? '#e05020',
+          strokeWidth: parseFloat(n.getAttribute('strokeWidth') ?? '2') || 2,
+          stroke:      (n.getAttribute('stroke')     ?? 'dashed') as SplineStroke,
+          visible:     n.getAttribute('visible')     !== 'false',
+          points,
+        });
+      }
+    });
+
+    this._state = { sails, annotations, splines, nextId, nextAnnId, nextSplineId };
     this._selectedId = null;
+    this._selectedSplineId = null;
     this.save();
   }
 }

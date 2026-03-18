@@ -5,6 +5,18 @@ export interface SailPoint {
 
 export type FillPattern = 'none' | 'lines45' | 'lines135' | 'crosshatch' | 'horizontal' | 'vertical' | 'dots' | 'dashes45' | 'dashes135' | 'finedash45' | 'finedash135';
 
+export type SplineStroke = 'solid' | 'dashed' | 'dotted' | 'dashdot' | 'finedash' | 'longdash';
+
+export interface ChartSpline {
+  id: number;
+  name: string;
+  color: string;
+  strokeWidth: number;
+  stroke: SplineStroke;
+  visible: boolean;
+  points: SailPoint[];
+}
+
 export interface SailData {
   id: number;
   name: string;
@@ -59,6 +71,7 @@ export interface ChartSettings {
 export interface AppActions {
   readonly mode: EditMode;
   selectSail(id: number | null): void;
+  selectSpline(id: number | null): void;
   setMode(mode: EditMode): void;
   deleteSelected(): void;
   undo(): void;

@@ -1,6 +1,6 @@
-import { SailData, LabelAnnotation, FillPattern, EditMode, CursorPosition } from '../model/types.js';
+import { SailData, LabelAnnotation, FillPattern, EditMode, CursorPosition, ChartSpline } from '../model/types.js';
 import { SailStore } from '../model/SailStore.js';
-import { CoordinateSystem, splinePath } from './CoordinateSystem.js';
+import { CoordinateSystem, splinePath, openSplinePath } from './CoordinateSystem.js';
 
 function seg(c: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number): void {
   c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
@@ -24,6 +24,7 @@ export class SailRenderer {
   patternScale       = 1;
   patternThickness   = 1;
   showLegend         = false;
+  selectedSplineId: number | null = null;
   cursor: CursorPosition | null = null;
   private _patCache = new Map<string, CanvasPattern | null>();
 
@@ -93,6 +94,9 @@ export class SailRenderer {
 
     // Annotations (inside chart clip)
     this._drawAnnotations(c);
+
+    // Splines (inside chart clip)
+    this._drawSplines(c, mode);
 
     c.restore();
 
@@ -262,6 +266,74 @@ export class SailRenderer {
     }
   }
 
+  // ── Splines ───────────────────────────────────────────────────────────────
+  private _dashPattern(stroke: import('../model/types.js').SplineStroke): number[] {
+    const p = (v: number) => this._px(v);
+    switch (stroke) {
+      case 'dashed':   return [p(8),  p(5)];
+      case 'dotted':   return [p(1),  p(6)];
+      case 'dashdot':  return [p(8),  p(4), p(2), p(4)];
+      case 'finedash': return [p(5),  p(3), p(1), p(3)];
+      case 'longdash': return [p(14), p(5)];
+      default:         return [];
+    }
+  }
+
+  private _drawSplines(c: CanvasRenderingContext2D, mode: EditMode): void {
+    for (const sp of this.store.splines) {
+      if (!sp.visible || sp.points.length < 2) continue;
+      const sel = sp.id === this.selectedSplineId;
+
+      openSplinePath(c, sp.points, this.coords);
+      c.strokeStyle = sp.color;
+      c.lineWidth   = sel ? sp.strokeWidth + 1 : sp.strokeWidth;
+      c.setLineDash(this._dashPattern(sp.stroke));
+      c.stroke();
+      c.setLineDash([]);
+
+      this._drawSplineLabel(c, sp, sel);
+      if (sel) this._drawSplineHandles(c, sp, mode);
+    }
+  }
+
+  private _drawSplineLabel(c: CanvasRenderingContext2D, sp: ChartSpline, sel: boolean): void {
+    if (!sp.name) return;
+    const mid = sp.points[Math.floor(sp.points.length / 2)];
+    const [mx, my] = this.coords.toPixel(mid.x, mid.y);
+    const fs = this._px(this.sailLabelFontSize + (sel ? 1 : 0));
+    c.font         = `600 ${fs}pt "Outfit", sans-serif`;
+    c.textAlign    = 'center';
+    c.textBaseline = 'bottom';
+    c.shadowColor  = 'rgba(255,255,255,0.85)';
+    c.shadowBlur   = this._px(4);
+    c.fillStyle    = sp.color;
+    c.fillText(sp.name, mx, my - this._px(6));
+    c.shadowBlur   = 0;
+  }
+
+  private _drawSplineHandles(c: CanvasRenderingContext2D, sp: ChartSpline, mode: EditMode): void {
+    for (let i = 0; i < sp.points.length; i++) {
+      const [hx, hy] = this.coords.toPixel(sp.points[i].x, sp.points[i].y);
+      const del = mode === 'delpt';
+      c.beginPath();
+      c.arc(hx, hy, del ? 16 : 13, 0, Math.PI * 2);
+      c.fillStyle = del ? 'rgba(192,48,48,0.15)' : 'rgba(150,150,150,0.18)';
+      c.fill();
+      c.beginPath();
+      c.arc(hx, hy, del ? 9 : 8, 0, Math.PI * 2);
+      c.fillStyle   = del ? '#d04040' : '#ffffff';
+      c.fill();
+      c.strokeStyle = del ? '#e06060' : sp.color;
+      c.lineWidth   = this._px(1.5);
+      c.stroke();
+      c.font         = `10pt "Azeret Mono", monospace`;
+      c.fillStyle    = del ? '#fff' : 'rgba(20,40,70,0.85)';
+      c.textAlign    = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(String(i), hx, hy);
+    }
+  }
+
   // ── Free label annotations ────────────────────────────────────────────────
   getAnnotationPixelPos(a: LabelAnnotation): [number, number] {
     return this.coords.toPixel(a.x, a.y);
@@ -322,18 +394,20 @@ export class SailRenderer {
   private _drawLegend(c: CanvasRenderingContext2D): void {
     const { x: cl, y: ct, w: cw, h: ch } = this.coords.chartRect;
     const { W } = this.coords;
-    const gap   = this._px(10);             // gap between chart edge and legend
-    const rPad  = this._px(6);              // right margin
-    const lx    = cl + cw + gap;            // legend left edge
-    const lw    = W - lx - rPad;           // available legend width
+    // All dimensions via _px() (= v/dpr) so they stay constant in physical pixels
+    // across any browser zoom level, matching how legendWidth is now set in App.
+    const gap      = this._px(10);        // gap between chart edge and legend
+    const rPad     = this._px(6);         // right margin
+    const lx       = cl + cw + gap;      // legend left edge
+    const lw       = W - lx - rPad;      // available legend width
     if (lw < this._px(30)) return;
 
     const fs       = this._px(this.sailLabelFontSize);
-    const lineH    = fs * (4 / 3);         // line height in canvas units
-    const padV     = this._px(6);          // vertical padding inside swatch
-    const swW      = lw;                   // swatch spans full legend width
-    const rowGap   = this._px(10);         // gap between rows
-    const textPadH = this._px(4);          // horizontal text inset
+    const lineH    = fs * (4 / 3);       // line height in canvas units
+    const padV     = this._px(6);        // vertical padding inside swatch
+    const swW      = lw;                 // swatch spans full legend width
+    const rowGap   = this._px(10);       // gap between rows
+    const textPadH = this._px(4);        // horizontal text inset
 
     c.font = `600 ${fs}pt "Outfit", sans-serif`;
 
