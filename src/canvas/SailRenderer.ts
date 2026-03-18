@@ -68,7 +68,7 @@ export class SailRenderer {
       }
       const pat = s.fillPattern ?? 'none';
       if (pat !== 'none') {
-        const pattern = this._makePattern(s.color, pat);
+        const pattern = this._makePattern(s.color, pat, s.patternDash ?? 4);
         if (pattern) { c.fillStyle = pattern; c.fill(); }
       }
     }
@@ -109,8 +109,8 @@ export class SailRenderer {
   }
 
   // ── Fill pattern generator ────────────────────────────────────────────────
-  private _makePattern(color: string, pattern: FillPattern): CanvasPattern | null {
-    const key = `${color}_${pattern}_${this.resolution.toFixed(3)}_${this.patternScale.toFixed(2)}_${this.patternThickness.toFixed(2)}`;
+  private _makePattern(color: string, pattern: FillPattern, dash = 4): CanvasPattern | null {
+    const key = `${color}_${pattern}_${this.resolution.toFixed(3)}_${this.patternScale.toFixed(2)}_${this.patternThickness.toFixed(2)}_${dash}`;
     if (this._patCache.has(key)) return this._patCache.get(key)!;
 
     // Tile is `spacing` logical units → spacing * resolution physical pixels
@@ -125,48 +125,55 @@ export class SailRenderer {
     ox.fillStyle   = `rgba(${hexToRgb(color)},0.80)`;
     ox.lineWidth   = lw;
 
-    const drawLines45 = () => {
-      for (let i = -1; i <= 2; i++) {
-        ox.beginPath();
-        ox.moveTo(i * s / 2,         0);
-        ox.lineTo(i * s / 2 + s,     s);
-        ox.stroke();
-      }
-    };
-    const drawLines135 = () => {
-      for (let i = -1; i <= 2; i++) {
-        ox.beginPath();
-        ox.moveTo(i * s / 2 + s,     0);
-        ox.lineTo(i * s / 2,         s);
-        ox.stroke();
-      }
-    };
+    // One line per s×s tile, extended past edges by lw so endpoint corners are
+    // fully covered. Tile (s,s) starts exactly where tile (0,0) ends → seamless.
+    const e = lw;  // extension past tile edge
+    const dashLen = Math.max(1, dash * this.resolution);
 
     switch (pattern) {
-      case 'lines45':    drawLines45(); break;
-      case 'lines135':   drawLines135(); break;
-      case 'crosshatch': drawLines45(); drawLines135(); break;
+      case 'lines45':
+        ox.beginPath(); ox.moveTo(-e, -e); ox.lineTo(s + e, s + e); ox.stroke();
+        break;
+      case 'lines135':
+        ox.beginPath(); ox.moveTo(s + e, -e); ox.lineTo(-e, s + e); ox.stroke();
+        break;
+      case 'crosshatch':
+        ox.beginPath();
+        ox.moveTo(-e, -e); ox.lineTo(s + e, s + e);
+        ox.moveTo(s + e, -e); ox.lineTo(-e, s + e);
+        ox.stroke();
+        break;
       case 'horizontal':
-        for (let y = 0; y < s; y += s / 2) {
-          ox.beginPath(); ox.moveTo(0, y); ox.lineTo(s, y); ox.stroke();
-        }
+        ox.beginPath(); ox.moveTo(-e, 0); ox.lineTo(s + e, 0); ox.stroke();
         break;
       case 'vertical':
-        for (let x = 0; x < s; x += s / 2) {
-          ox.beginPath(); ox.moveTo(x, 0); ox.lineTo(x, s); ox.stroke();
-        }
+        ox.beginPath(); ox.moveTo(0, -e); ox.lineTo(0, s + e); ox.stroke();
+        break;
+      case 'dashes45':
+        ox.setLineDash([dashLen, dashLen]);
+        ox.beginPath(); ox.moveTo(-e, -e); ox.lineTo(s + e, s + e); ox.stroke();
+        ox.setLineDash([]);
+        break;
+      case 'dashes135':
+        ox.setLineDash([dashLen, dashLen]);
+        ox.beginPath(); ox.moveTo(s + e, -e); ox.lineTo(-e, s + e); ox.stroke();
+        ox.setLineDash([]);
         break;
       case 'dots': {
+        ox.fillStyle = `rgba(${hexToRgb(color)},0.80)`;
         const r = s / 5;
-        ox.beginPath(); ox.arc(s / 2, s / 2, r, 0, Math.PI * 2); ox.fill();
-        for (const [cx, cy] of [[0,0],[s,0],[0,s],[s,s]] as [number,number][]) {
-          ox.beginPath(); ox.arc(cx, cy, r / 2, 0, Math.PI * 2); ox.fill();
-        }
+        ox.beginPath(); ox.arc(0, 0, r, 0, Math.PI * 2); ox.fill();
         break;
       }
     }
 
     const result = this.ctx.createPattern(oc, 'repeat');
+    if (result) {
+      // The tile was drawn at physical resolution; undo the canvas transform so the
+      // pattern tiles at a constant visual size regardless of DPR / export scale.
+      const inv = 1 / this.resolution;
+      result.setTransform(new DOMMatrix([inv, 0, 0, inv, 0, 0]));
+    }
     this._patCache.set(key, result);
     return result;
   }

@@ -3,7 +3,7 @@ export interface SailPoint {
   y: number;
 }
 
-export type FillPattern = 'none' | 'lines45' | 'lines135' | 'crosshatch' | 'horizontal' | 'vertical' | 'dots';
+export type FillPattern = 'none' | 'lines45' | 'lines135' | 'crosshatch' | 'horizontal' | 'vertical' | 'dots' | 'dashes45' | 'dashes135';
 
 export interface SailData {
   id: number;
@@ -13,6 +13,7 @@ export interface SailData {
   visible: boolean;
   showFill: boolean;
   fillPattern: FillPattern;
+  patternDash: number;  // dash length in logical px, only used by dashes45/dashes135
   points: SailPoint[];
   labelOffset?: SailPoint; // offset from centroid in data coords (TWA, TWS)
 }

@@ -119,6 +119,7 @@ export class SailStore {
       visible:     props.visible     ?? true,
       showFill:    props.showFill    ?? true,
       fillPattern: props.fillPattern ?? 'none',
+      patternDash: props.patternDash ?? 4,
       points:      props.points      ?? makeOval(props.ox ?? 90, props.oy ?? 15, props.rx ?? 20, props.ry ?? 6),
     };
     this._state.sails.push(sail);
@@ -235,7 +236,7 @@ export class SailStore {
     let nextId = 1;
     const sails = DEFAULT_DEFS.map(d => ({
       id: nextId++, name: d.name, color: d.color,
-      opacity: 0.62, visible: true, showFill: true, fillPattern: 'none' as FillPattern,
+      opacity: 0.62, visible: true, showFill: true, fillPattern: 'none' as FillPattern, patternDash: 4,
       points: makeOval(d.ox, d.oy, d.rx, d.ry),
     }));
     return { sails, annotations: [], nextId, nextAnnId: 1 };
@@ -265,7 +266,7 @@ export class SailStore {
       const loAttr = s.labelOffset
         ? ` labelOffsetX="${s.labelOffset.x.toFixed(3)}" labelOffsetY="${s.labelOffset.y.toFixed(3)}"`
         : '';
-      const fillAttr = ` showFill="${s.showFill ?? true}" fillPattern="${s.fillPattern ?? 'none'}"`;
+      const fillAttr = ` showFill="${s.showFill ?? true}" fillPattern="${s.fillPattern ?? 'none'}" patternDash="${s.patternDash ?? 4}"`;
       xml += `  <Sail name="${escXml(s.name)}" color="${s.color}" opacity="${s.opacity.toFixed(2)}" visible="${s.visible}"${fillAttr} points="${pts}"${loAttr}/>\n`;
     }
     for (const a of this._state.annotations) {
@@ -337,6 +338,7 @@ export class SailStore {
         visible:     n.getAttribute('visible') !== 'false',
         showFill:    n.getAttribute('showFill') !== 'false',
         fillPattern: (n.getAttribute('fillPattern') ?? 'none') as FillPattern,
+        patternDash: parseFloat(n.getAttribute('patternDash') ?? '4') || 4,
         points,
         labelOffset,
       });

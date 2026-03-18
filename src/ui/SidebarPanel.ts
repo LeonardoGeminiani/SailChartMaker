@@ -119,7 +119,9 @@ export class SidebarPanel {
     (document.getElementById('edColor')       as HTMLInputElement).value  = s.color;
     (document.getElementById('edOpacity')     as HTMLInputElement).value  = String(Math.round(s.opacity * 100));
     (document.getElementById('edShowFill')    as HTMLInputElement).checked = s.showFill !== false;
-    (document.getElementById('edFillPattern') as HTMLSelectElement).value = s.fillPattern ?? 'none';
+    (document.getElementById('edFillPattern') as HTMLSelectElement).value   = s.fillPattern ?? 'none';
+    (document.getElementById('edPatternDash') as HTMLInputElement).value    = String(s.patternDash ?? 4);
+    this._syncDashRow(s.fillPattern ?? 'none');
     document.getElementById('edTitle')!.textContent = s.name;
     this.editDirty = false;
   }
@@ -154,8 +156,14 @@ export class SidebarPanel {
 
     const edShowFill    = document.getElementById('edShowFill')    as HTMLInputElement;
     const edFillPattern = document.getElementById('edFillPattern') as HTMLSelectElement;
+    const edPatternDash = document.getElementById('edPatternDash') as HTMLInputElement;
     edShowFill.addEventListener('change',    () => { onFirst(); this._applyEdit(); });
-    edFillPattern.addEventListener('change', () => { onFirst(); this._applyEdit(); });
+    edFillPattern.addEventListener('change', () => {
+      onFirst();
+      this._syncDashRow(edFillPattern.value);
+      this._applyEdit();
+    });
+    edPatternDash.addEventListener('input',  () => { onFirst(); this._applyEdit(); });
 
     document.getElementById('btnDelSail')!.addEventListener('click', () => this.onDelete());
   }
@@ -169,10 +177,16 @@ export class SidebarPanel {
     s.opacity     = parseInt((document.getElementById('edOpacity') as HTMLInputElement).value, 10) / 100;
     s.showFill    = (document.getElementById('edShowFill')    as HTMLInputElement).checked;
     s.fillPattern = (document.getElementById('edFillPattern') as HTMLSelectElement).value as FillPattern;
+    s.patternDash = Math.max(1, parseInt((document.getElementById('edPatternDash') as HTMLInputElement).value, 10) || 4);
     this.store.save();
     document.getElementById('edTitle')!.textContent = s.name || 'Edit Sail';
     this.renderList();
     this.onRedraw();
+  }
+
+  private _syncDashRow(pattern: string): void {
+    const row = document.getElementById('dashLenRow');
+    if (row) row.style.display = (pattern === 'dashes45' || pattern === 'dashes135') ? '' : 'none';
   }
 
   private _esc(str: string): string {
