@@ -1,3 +1,4 @@
+import { jsPDF } from 'jspdf';
 import { AppActions, EditMode } from './model/types.js';
 import { SailStore } from './model/SailStore.js';
 import { PolarData } from './model/PolarData.js';
@@ -473,7 +474,7 @@ export class App implements AppActions {
     this._btn('btnExportPNG', () => {
       this._download(this.sailRend.exportWith(this.bgCanvas).toDataURL('image/png'), 'SailChart.png');
     });
-    this._btn('btnPrint', () => window.print());
+    this._btn('btnExportPDF', () => this._exportPDF());
 
     const fileInput = document.getElementById('fileInput') as HTMLInputElement;
     fileInput.addEventListener('change', e => {
