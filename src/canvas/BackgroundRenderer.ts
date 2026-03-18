@@ -163,7 +163,7 @@ export class BackgroundRenderer {
     }
 
     // Axis labels
-    c.font      = `${this._px(this.fontSize)}pt "Azeret Mono", monospace`;
+    c.font      = `${this._px(this.fontSize)}pt "JetBrains Mono", monospace`;
     c.fillStyle = 'rgba(40,65,100,0.75)';
 
     // X bottom
@@ -197,7 +197,7 @@ export class BackgroundRenderer {
 
     // Axis titles
     c.fillStyle    = 'rgba(50,75,115,0.55)';
-    c.font         = `${this._px(this.fontSize + 0.5)}pt "Outfit", sans-serif`;
+    c.font         = `${this._px(this.fontSize + 0.5)}pt "Inter", sans-serif`;
     c.textAlign    = 'center';
     c.textBaseline = 'bottom';
     c.fillText('True Wind Angle — TWA (°)', l + cw / 2, H - this._px(2));
@@ -273,7 +273,7 @@ export class BackgroundRenderer {
       const midIdx = Math.floor(pts.length * 0.35);
       const [twa60, tws60] = pts[midIdx];
       const [lx, ly] = this.coords.toPixel(twa60, tws60);
-      c.font      = `bold ${this._px(Math.max(1, this.fontSize - 1))}pt "Azeret Mono", monospace`;
+      c.font      = `bold ${this._px(Math.max(1, this.fontSize - 1))}pt "JetBrains Mono", monospace`;
       c.fillStyle = 'rgba(180,20,20,0.85)';
       c.textAlign    = align;
       c.textBaseline = 'middle';
@@ -333,7 +333,7 @@ export class BackgroundRenderer {
       c.stroke();
       c.setLineDash([]);
 
-      c.font         = `${this._px(Math.max(1, this.fontSize - 2))}pt "Azeret Mono", monospace`;
+      c.font         = `${this._px(Math.max(1, this.fontSize - 2))}pt "JetBrains Mono", monospace`;
       c.fillStyle    = 'rgba(30,60,150,0.65)';
       c.textAlign    = 'left';
       c.textBaseline = 'bottom';
@@ -375,7 +375,7 @@ export class BackgroundRenderer {
       }
     }
 
-    c.font         = `500 ${this._px(this.bspFontSize)}pt "Azeret Mono", monospace`;
+    c.font         = `500 ${this._px(this.bspFontSize)}pt "JetBrains Mono", monospace`;
     c.fillStyle    = this.bspColor;
     c.textAlign    = 'center';
     c.textBaseline = 'middle';

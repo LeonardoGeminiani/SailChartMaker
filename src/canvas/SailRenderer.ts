@@ -205,7 +205,7 @@ export class SailRenderer {
     const [lpx, lpy] = this.getLabelPixelPos(s);
     const fs = this._px(this.sailLabelFontSize + (sel ? 1 : 0));
 
-    c.font         = `bold ${fs}pt "Outfit", sans-serif`;
+    c.font         = `bold ${fs}pt "Inter", sans-serif`;
     c.textAlign    = 'center';
     c.textBaseline = 'bottom';
     c.shadowColor  = 'rgba(255,255,255,0.85)';
@@ -258,7 +258,7 @@ export class SailRenderer {
       c.stroke();
 
       // Index number — scales with zoom
-      c.font         = `10pt "Azeret Mono", monospace`;
+      c.font         = `10pt "JetBrains Mono", monospace`;
       c.fillStyle    = del ? '#fff' : 'rgba(20,40,70,0.85)';
       c.textAlign    = 'center';
       c.textBaseline = 'middle';
@@ -301,7 +301,7 @@ export class SailRenderer {
     const mid = sp.points[Math.floor(sp.points.length / 2)];
     const [mx, my] = this.coords.toPixel(mid.x, mid.y);
     const fs = this._px(this.sailLabelFontSize + (sel ? 1 : 0));
-    c.font         = `600 ${fs}pt "Outfit", sans-serif`;
+    c.font         = `600 ${fs}pt "Inter", sans-serif`;
     c.textAlign    = 'center';
     c.textBaseline = 'bottom';
     c.shadowColor  = 'rgba(255,255,255,0.85)';
@@ -326,7 +326,7 @@ export class SailRenderer {
       c.strokeStyle = del ? '#e06060' : sp.color;
       c.lineWidth   = this._px(1.5);
       c.stroke();
-      c.font         = `10pt "Azeret Mono", monospace`;
+      c.font         = `10pt "JetBrains Mono", monospace`;
       c.fillStyle    = del ? '#fff' : 'rgba(20,40,70,0.85)';
       c.textAlign    = 'center';
       c.textBaseline = 'middle';
@@ -343,7 +343,7 @@ export class SailRenderer {
     for (const a of this.store.annotations) {
       const [px, py] = this.getAnnotationPixelPos(a);
       const fs = this._px(this.sailLabelFontSize);
-      c.font = `600 ${fs}pt "Outfit", sans-serif`;
+      c.font = `600 ${fs}pt "Inter", sans-serif`;
       c.textAlign    = 'center';
       c.textBaseline = 'middle';
 
@@ -409,7 +409,7 @@ export class SailRenderer {
     const rowGap   = this._px(10);       // gap between rows
     const textPadH = this._px(4);        // horizontal text inset
 
-    c.font = `600 ${fs}pt "Outfit", sans-serif`;
+    c.font = `600 ${fs}pt "Inter", sans-serif`;
 
     let ry = ct;
 
@@ -440,7 +440,7 @@ export class SailRenderer {
       c.strokeRect(lx, ry, swW, swH);
 
       // Sail name — wrapped lines centred in swatch
-      c.font         = `600 ${fs}pt "Outfit", sans-serif`;
+      c.font         = `600 ${fs}pt "Inter", sans-serif`;
       c.fillStyle    = 'rgba(15,25,40,0.88)';
       c.shadowColor  = 'rgba(255,255,255,0.80)';
       c.shadowBlur   = this._px(3);
@@ -470,7 +470,7 @@ export class SailRenderer {
     const b = H - t - ch;
     const [cx, cy] = this.coords.toPixel(twa, tws);
 
-    c.font         = `bold ${this._px(this.axisFontSize)}pt "Azeret Mono", monospace`;
+    c.font         = `bold ${this._px(this.axisFontSize)}pt "JetBrains Mono", monospace`;
     c.textAlign    = 'center';
     c.textBaseline = 'middle';
 
