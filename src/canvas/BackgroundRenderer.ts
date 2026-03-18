@@ -51,7 +51,9 @@ export class BackgroundRenderer {
   dpr        = 1;
   vmgStrokeWidth = 1.5;
   awsStrokeWidth = 1.0;
-  bspLabelStep   = 1;
+  bspLabelStep   = 2;
+  bspFontSize    = 9;
+  bspColor       = '#128048';
   axisStrokeScale = 1.0;
   polar: PolarData | null = null;
 
@@ -373,8 +375,8 @@ export class BackgroundRenderer {
       }
     }
 
-    c.font         = `500 ${this._px(Math.max(1, this.fontSize - 1))}pt "Azeret Mono", monospace`;
-    c.fillStyle    = 'rgba(18,130,72,0.80)';
+    c.font         = `500 ${this._px(this.bspFontSize)}pt "Azeret Mono", monospace`;
+    c.fillStyle    = this.bspColor;
     c.textAlign    = 'center';
     c.textBaseline = 'middle';
 

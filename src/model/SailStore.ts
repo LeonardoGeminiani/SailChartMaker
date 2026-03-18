@@ -54,7 +54,7 @@ const DEFAULT_CHART_SETTINGS: ChartSettings = {
   bgColor: '#ffffff', fontSize: 11, sailLabelFontSize: 11, smoothing: 5,
   vmgStrokeWidth: 1.5, awsStrokeWidth: 1.0, axisStrokeScale: 1.0,
   twaMin: 30, twaMax: 160, twsMin: 0, twsMax: 30,
-  showAWS: false, showBSP: false, bspLabelStep: 2, patternScale: 1, patternThickness: 1, twsReversed: false, resolution: 0, chartMargin: 0, showLegend: false,
+  showAWS: false, showBSP: false, bspLabelStep: 2, bspFontSize: 9, bspColor: '#128048', patternScale: 1, patternThickness: 1, twsReversed: false, resolution: 0, chartMargin: 0, showLegend: false,
 };
 
 // ── SailStore ─────────────────────────────────────────────────────────────────
@@ -317,6 +317,7 @@ export class SailStore {
       `twaMin="${cs.twaMin}"`, `twaMax="${cs.twaMax}"`,
       `twsMin="${cs.twsMin}"`, `twsMax="${cs.twsMax}"`,
       `showAWS="${cs.showAWS}"`, `showBSP="${cs.showBSP}"`, `bspLabelStep="${cs.bspLabelStep}"`,
+      `bspFontSize="${cs.bspFontSize}"`, `bspColor="${cs.bspColor}"`,
       `patternScale="${cs.patternScale}"`, `patternThickness="${cs.patternThickness}"`, `twsReversed="${cs.twsReversed}"`, `resolution="${cs.resolution}"`,
       `chartMargin="${cs.chartMargin}"`, `showLegend="${cs.showLegend}"`,
     ].join(' ');
@@ -363,7 +364,9 @@ export class SailStore {
         twsMax:            Number(g('twsMax',            String(DEFAULT_CHART_SETTINGS.twsMax))),
         showAWS:           g('showAWS',      'false') === 'true',
         showBSP:           g('showBSP',      'false') === 'true',
-        bspLabelStep:      Math.max(1, Number(g('bspLabelStep', '1'))),
+        bspLabelStep:      Math.max(1, Number(g('bspLabelStep', '2'))),
+        bspFontSize:       Math.max(1, Number(g('bspFontSize',  '9'))),
+        bspColor:          g('bspColor',    '#128048'),
         patternScale:      Number(g('patternScale',     '1')),
         patternThickness:  Number(g('patternThickness', '1')),
         twsReversed:       g('twsReversed',  'false') === 'true',

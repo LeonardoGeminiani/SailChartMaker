@@ -262,7 +262,7 @@ export class App implements AppActions {
 
     const bspStepVal = document.getElementById('bspStepVal')!;
     const updateBspStep = (delta: number) => {
-      const next = Math.max(1, (this.store.chartSettings.bspLabelStep ?? 1) + delta);
+      const next = Math.max(1, (this.store.chartSettings.bspLabelStep ?? 2) + delta);
       this.store.chartSettings.bspLabelStep = next;
       this.bgRend.bspLabelStep = next;
       bspStepVal.textContent = String(next);
@@ -271,6 +271,26 @@ export class App implements AppActions {
     };
     this._btn('bspStepDec', () => updateBspStep(-1));
     this._btn('bspStepInc', () => updateBspStep(+1));
+
+    const bspFontVal = document.getElementById('bspFontVal')!;
+    const updateBspFont = (delta: number) => {
+      const next = Math.max(1, (this.store.chartSettings.bspFontSize ?? 9) + delta);
+      this.store.chartSettings.bspFontSize = next;
+      this.bgRend.bspFontSize = next;
+      bspFontVal.textContent = String(next);
+      this.store.save();
+      this.bgRend.draw();
+    };
+    this._btn('bspFontDec', () => updateBspFont(-1));
+    this._btn('bspFontInc', () => updateBspFont(+1));
+
+    const bspColorPicker = document.getElementById('bspColor') as HTMLInputElement;
+    bspColorPicker?.addEventListener('input', () => {
+      this.bgRend.bspColor = bspColorPicker.value;
+      this.store.chartSettings.bspColor = bspColorPicker.value;
+      this.store.save();
+      this.bgRend.draw();
+    });
 
 
     const twsRevToggle = document.getElementById('toggleTWSReversed') as HTMLInputElement | null;
@@ -493,8 +513,10 @@ export class App implements AppActions {
     this.bgRend.awsStrokeWidth  = s.awsStrokeWidth;
     this.bgRend.axisStrokeScale = s.axisStrokeScale;
     this.bgRend.showAWS         = s.showAWS && this.bgRend.polar !== null;
-    this.bgRend.showBSP         = (s.showBSP ?? false) && this.bgRend.polar !== null;
-    this.bgRend.bspLabelStep    = s.bspLabelStep ?? 1;
+    this.bgRend.showBSP      = (s.showBSP ?? false) && this.bgRend.polar !== null;
+    this.bgRend.bspLabelStep = s.bspLabelStep ?? 2;
+    this.bgRend.bspFontSize  = s.bspFontSize  ?? 9;
+    this.bgRend.bspColor     = s.bspColor     ?? '#128048';
     this.coords.twaMin          = s.twaMin;
     this.coords.twaMax          = s.twaMax;
     this.coords.twsMin          = s.twsMin;
@@ -534,7 +556,9 @@ export class App implements AppActions {
     if (awsTog) awsTog.checked = this.bgRend.showAWS;
     const bspTog = document.getElementById('toggleBSP') as HTMLInputElement | null;
     if (bspTog) bspTog.checked = this.bgRend.showBSP;
-    setText('bspStepVal', String(s.bspLabelStep ?? 1));
+    setText('bspStepVal', String(s.bspLabelStep ?? 2));
+    setText('bspFontVal', String(s.bspFontSize  ?? 9));
+    set('bspColor', s.bspColor ?? '#128048');
     const twsRevTog = document.getElementById('toggleTWSReversed') as HTMLInputElement | null;
     if (twsRevTog) twsRevTog.checked = s.twsReversed ?? false;
     const legendTog = document.getElementById('toggleLegend') as HTMLInputElement | null;

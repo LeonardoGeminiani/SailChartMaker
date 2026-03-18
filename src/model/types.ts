@@ -61,6 +61,8 @@ export interface ChartSettings {
   showAWS:            boolean;
   showBSP:            boolean;
   bspLabelStep:       number;
+  bspFontSize:        number;
+  bspColor:           string;
   patternScale:       number;
   patternThickness:   number;
   twsReversed:        boolean;
