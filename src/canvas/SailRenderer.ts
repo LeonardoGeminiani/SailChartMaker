@@ -137,23 +137,23 @@ export class SailRenderer {
       const [hx, hy] = this.coords.toPixel(s.points[i].x, s.points[i].y);
       const del = mode === 'delpt';
 
-      // Halo
+      // Halo — raw (no _px) so it scales with page zoom / DPR
       c.beginPath();
-      c.arc(hx, hy, this._px(del ? 11 : 9), 0, Math.PI * 2);
+      c.arc(hx, hy, del ? 16 : 13, 0, Math.PI * 2);
       c.fillStyle = del ? 'rgba(192,48,48,0.15)' : `rgba(${hexToRgb(s.color)},0.18)`;
       c.fill();
 
-      // Handle
+      // Handle dot — scales with zoom
       c.beginPath();
-      c.arc(hx, hy, this._px(del ? 6 : 5), 0, Math.PI * 2);
+      c.arc(hx, hy, del ? 9 : 8, 0, Math.PI * 2);
       c.fillStyle   = del ? '#d04040' : '#ffffff';
       c.fill();
       c.strokeStyle = del ? '#e06060' : s.color;
       c.lineWidth   = this._px(1.5);
       c.stroke();
 
-      // Index number
-      c.font         = `${this._px(9)}pt "Azeret Mono", monospace`;
+      // Index number — scales with zoom
+      c.font         = `10pt "Azeret Mono", monospace`;
       c.fillStyle    = del ? '#fff' : 'rgba(20,40,70,0.85)';
       c.textAlign    = 'center';
       c.textBaseline = 'middle';
