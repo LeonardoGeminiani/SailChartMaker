@@ -3,7 +3,7 @@ export interface SailPoint {
   y: number;
 }
 
-export type FillPattern = 'none' | 'lines45' | 'lines135' | 'crosshatch' | 'horizontal' | 'vertical' | 'dots' | 'dashes45' | 'dashes135';
+export type FillPattern = 'none' | 'lines45' | 'lines135' | 'crosshatch' | 'horizontal' | 'vertical' | 'dots' | 'dashes45' | 'dashes135' | 'finedash45' | 'finedash135';
 
 export interface SailData {
   id: number;

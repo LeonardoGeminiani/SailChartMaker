@@ -163,10 +163,24 @@ export class SailRenderer {
         ox.beginPath(); ox.moveTo(s + e, -e); ox.lineTo(-e, s + e); ox.stroke();
         ox.setLineDash([]);
         break;
+      case 'finedash45': {
+        const u = this.resolution;
+        ox.setLineDash([5 * u, 3 * u, 1 * u, 3 * u]);
+        ox.beginPath(); ox.moveTo(-e, -e); ox.lineTo(s + e, s + e); ox.stroke();
+        ox.setLineDash([]);
+        break;
+      }
+      case 'finedash135': {
+        const u = this.resolution;
+        ox.setLineDash([5 * u, 3 * u, 1 * u, 3 * u]);
+        ox.beginPath(); ox.moveTo(s + e, -e); ox.lineTo(-e, s + e); ox.stroke();
+        ox.setLineDash([]);
+        break;
+      }
       case 'dots': {
         ox.fillStyle = `rgba(${hexToRgb(color)},0.80)`;
         const r = s / 5;
-        ox.beginPath(); ox.arc(0, 0, r, 0, Math.PI * 2); ox.fill();
+        ox.beginPath(); ox.arc(s / 2, s / 2, r, 0, Math.PI * 2); ox.fill();
         break;
       }
     }
