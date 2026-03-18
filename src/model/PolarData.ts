@@ -50,6 +50,8 @@ export class PolarData {
   get maxTWS(): number { return this.twsValues[this.twsValues.length - 1]; }
   get minTWA(): number { return this.twaValues[0]; }
   get maxTWA(): number { return this.twaValues[this.twaValues.length - 1]; }
+  get allTWA(): readonly number[] { return this.twaValues; }
+  get allTWS(): readonly number[] { return this.twsValues; }
 
   /** Bilinear interpolation, clamped to polar grid bounds. */
   getBSP(twa: number, tws: number): number {

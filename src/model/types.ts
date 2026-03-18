@@ -59,6 +59,8 @@ export interface ChartSettings {
   twsMin:             number;
   twsMax:             number;
   showAWS:            boolean;
+  showBSP:            boolean;
+  bspLabelStep:       number;
   patternScale:       number;
   patternThickness:   number;
   twsReversed:        boolean;

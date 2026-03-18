@@ -252,6 +252,26 @@ export class App implements AppActions {
       this.bgRend.draw();
     });
 
+    const bspToggle = document.getElementById('toggleBSP') as HTMLInputElement | null;
+    bspToggle?.addEventListener('change', () => {
+      this.bgRend.showBSP = bspToggle.checked;
+      this.store.chartSettings.showBSP = bspToggle.checked;
+      this.store.save();
+      this.bgRend.draw();
+    });
+
+    const bspStepVal = document.getElementById('bspStepVal')!;
+    const updateBspStep = (delta: number) => {
+      const next = Math.max(1, (this.store.chartSettings.bspLabelStep ?? 1) + delta);
+      this.store.chartSettings.bspLabelStep = next;
+      this.bgRend.bspLabelStep = next;
+      bspStepVal.textContent = String(next);
+      this.store.save();
+      this.bgRend.draw();
+    };
+    this._btn('bspStepDec', () => updateBspStep(-1));
+    this._btn('bspStepInc', () => updateBspStep(+1));
+
 
     const twsRevToggle = document.getElementById('toggleTWSReversed') as HTMLInputElement | null;
     twsRevToggle?.addEventListener('change', () => {
@@ -284,6 +304,7 @@ export class App implements AppActions {
           const polar = PolarData.fromCSV(ev.target!.result as string, file.name);
           this.bgRend.polar = polar;
           awsToggle.disabled = false;
+          if (bspToggle) bspToggle.disabled = false;
           polarHint.textContent = polar.name;
           polarHint.classList.add('polar-hint--loaded');
           this.bgRend.draw();
@@ -472,6 +493,8 @@ export class App implements AppActions {
     this.bgRend.awsStrokeWidth  = s.awsStrokeWidth;
     this.bgRend.axisStrokeScale = s.axisStrokeScale;
     this.bgRend.showAWS         = s.showAWS && this.bgRend.polar !== null;
+    this.bgRend.showBSP         = (s.showBSP ?? false) && this.bgRend.polar !== null;
+    this.bgRend.bspLabelStep    = s.bspLabelStep ?? 1;
     this.coords.twaMin          = s.twaMin;
     this.coords.twaMax          = s.twaMax;
     this.coords.twsMin          = s.twsMin;
@@ -509,6 +532,9 @@ export class App implements AppActions {
 
     const awsTog = document.getElementById('toggleAWS') as HTMLInputElement | null;
     if (awsTog) awsTog.checked = this.bgRend.showAWS;
+    const bspTog = document.getElementById('toggleBSP') as HTMLInputElement | null;
+    if (bspTog) bspTog.checked = this.bgRend.showBSP;
+    setText('bspStepVal', String(s.bspLabelStep ?? 1));
     const twsRevTog = document.getElementById('toggleTWSReversed') as HTMLInputElement | null;
     if (twsRevTog) twsRevTog.checked = s.twsReversed ?? false;
     const legendTog = document.getElementById('toggleLegend') as HTMLInputElement | null;

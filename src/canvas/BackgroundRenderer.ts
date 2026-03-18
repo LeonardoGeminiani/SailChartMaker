@@ -42,6 +42,7 @@ function smooth(pts: [number, number][], axis: 0 | 1, half: number): [number, nu
 // ── BackgroundRenderer ────────────────────────────────────────────────────────
 export class BackgroundRenderer {
   showAWS     = false;
+  showBSP     = false;
   showLegend  = false;
   bgColor     = '#ffffff';
   fontSize  = 11;
@@ -50,6 +51,7 @@ export class BackgroundRenderer {
   dpr        = 1;
   vmgStrokeWidth = 1.5;
   awsStrokeWidth = 1.0;
+  bspLabelStep   = 1;
   axisStrokeScale = 1.0;
   polar: PolarData | null = null;
 
@@ -127,6 +129,9 @@ export class BackgroundRenderer {
       const [, py] = this.coords.toPixel(0, y);
       seg(c, l, py, W - r, py);
     }
+
+    // BSP speed labels at grid intersections
+    if (this.showBSP) this._drawBSPLabels(c);
 
     // VMG target curves (always shown when polar is loaded)
     if (this.polar) this._drawVMGCurves(c);
@@ -334,5 +339,58 @@ export class BackgroundRenderer {
     }
 
     c.restore();
+  }
+
+  // BSP labels: boat speed value drawn at each grid intersection.
+  // Uses polar data points when sparse (≤80 total), axis grid otherwise.
+  // Skips points outside the polar's actual data range.
+  private _drawBSPLabels(c: CanvasRenderingContext2D): void {
+    if (!this.polar) return;
+    const polar = this.polar;
+    const { x: l, y: t, w: cw, h: ch } = this.coords.chartRect;
+
+    // Choose grid: polar data points if sparse, else chart axis intersections.
+    // bspLabelStep: 1 = coarsest, higher = denser.
+    const d = Math.max(1, Math.round(this.bspLabelStep));
+    let twaGrid: number[];
+    let twsGrid: number[];
+    if (polar.allTWA.length * polar.allTWS.length <= 80) {
+      // Sparse polar: subsample every Nth polar point (higher d → smaller N)
+      const sub = Math.max(1, Math.ceil(3 / d)); // d=1→3, d=2→2, d=3+→1
+      twaGrid = polar.allTWA.filter((_, i) => i % sub === 0)
+                             .filter(v => v >= this.coords.twaMin && v <= this.coords.twaMax) as number[];
+      twsGrid = polar.allTWS.filter((_, i) => i % sub === 0)
+                             .filter(v => v >= this.coords.twsMin && v <= this.coords.twsMax) as number[];
+    } else {
+      // Dense polar: use axis grid with interval shrinking as d grows
+      const twaDelta = d <= 1 ? 30 : d <= 2 ? 15 : d <= 4 ? 10 : 5;
+      const twsDelta = d <= 1 ? 10 : d <= 3 ?  5 :               2;
+      twaGrid = [];
+      for (let v = this.coords.twaMin; v <= this.coords.twaMax; v += twaDelta) twaGrid.push(v);
+      twsGrid = [];
+      for (let v = this.coords.twsMin; v <= this.coords.twsMax; v += twsDelta) {
+        if (v > 0) twsGrid.push(v); // skip 0 kts
+      }
+    }
+
+    c.font         = `500 ${this._px(Math.max(1, this.fontSize - 1))}pt "Azeret Mono", monospace`;
+    c.fillStyle    = 'rgba(18,130,72,0.80)';
+    c.textAlign    = 'center';
+    c.textBaseline = 'middle';
+
+    for (const twa of twaGrid) {
+      for (const tws of twsGrid) {
+        // Only draw if within polar's actual data bounds (no clamped extrapolation)
+        if (twa < polar.minTWA || twa > polar.maxTWA) continue;
+        if (tws < polar.minTWS || tws > polar.maxTWS) continue;
+
+        const [px, py] = this.coords.toPixel(twa, tws);
+        const m = this._px(20);
+        if (px < l + m || px > l + cw - m || py < t + m || py > t + ch - m) continue;
+
+        const bsp = polar.getBSP(twa, tws);
+        c.fillText(bsp.toFixed(1), px, py);
+      }
+    }
   }
 }
