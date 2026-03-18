@@ -326,11 +326,32 @@ button.btn-danger:hover { background: var(--danger-glow); border-color: rgba(192
 .sidebar-tab:hover  { color: var(--text3); }
 .sidebar-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+/* Sliding panels viewport */
+.panels-viewport {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+}
+
+.panels-track {
+  display: flex;
+  flex-direction: row;
+  width: 200%;
+  height: 100%;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.panels-track.show-appearance {
+  transform: translateX(-50%);
+}
+
 /* Panels */
 .sidebar-panel {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 0 0 50%;
+  height: 100%;
   overflow: hidden;
 }
 .sidebar-panel--settings {
@@ -423,6 +444,34 @@ button.btn-danger:hover { background: var(--danger-glow); border-color: rgba(192
 }
 .vis-btn:hover { background: var(--surface3) !important; color: var(--text) !important; }
 .vis-btn.hidden { opacity: 0.4; }
+
+.order-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 0.12s;
+  flex-shrink: 0;
+}
+.sail-item:hover .order-btns,
+.sail-item.selected .order-btns { opacity: 1; }
+
+.order-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 13px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.order-btn:hover:not(:disabled) { background: var(--surface3); color: var(--text); }
+.order-btn:disabled { opacity: 0.2; cursor: default; }
 
 /* Editor */
 .editor {

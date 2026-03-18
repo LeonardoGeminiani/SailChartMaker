@@ -3,10 +3,23 @@ import { X_MIN, X_MAX, Y_MIN, Y_MAX } from '../model/SailStore.js';
 export interface ChartRect { x: number; y: number; w: number; h: number; }
 
 // ── CoordinateSystem ──────────────────────────────────────────────────────────
+const BASE_PAD = { l: 54, r: 42, t: 32, b: 46 };
+
 export class CoordinateSystem {
-  readonly pad = { l: 54, r: 42, t: 32, b: 46 };
+  pad = { ...BASE_PAD };
   W = 800;
   H = 600;
+
+  /** Add `extra` CSS pixels of margin to every side (can be negative to shrink). */
+  setMargin(extra: number): void {
+    const m = Math.round(extra);
+    this.pad = {
+      l: Math.max(10, BASE_PAD.l + m),
+      r: Math.max(10, BASE_PAD.r + m),
+      t: Math.max(10, BASE_PAD.t + m),
+      b: Math.max(10, BASE_PAD.b + m),
+    };
+  }
 
   // Axis range — mutable at runtime
   twaMin = X_MIN;

@@ -10,6 +10,7 @@ export interface SailData {
   opacity: number;
   visible: boolean;
   points: SailPoint[];
+  labelOffset?: SailPoint; // offset from centroid in data coords (TWA, TWS)
 }
 
 export type EditMode = 'select' | 'addpt' | 'delpt';
@@ -20,18 +21,20 @@ export interface CursorPosition {
 }
 
 export interface ChartSettings {
-  bgColor:        string;
-  fontSize:       number;
-  smoothing:      number;
-  vmgStrokeWidth: number;
-  awsStrokeWidth: number;
-  axisStrokeScale:number;
-  twaMin:         number;
-  twaMax:         number;
-  twsMin:         number;
-  twsMax:         number;
-  showAWS:        boolean;
-  resolution:     number;
+  bgColor:            string;
+  fontSize:           number;
+  sailLabelFontSize:  number;
+  smoothing:          number;
+  vmgStrokeWidth:     number;
+  awsStrokeWidth:     number;
+  axisStrokeScale:    number;
+  twaMin:             number;
+  twaMax:             number;
+  twsMin:             number;
+  twsMax:             number;
+  showAWS:            boolean;
+  resolution:         number;
+  chartMargin:        number;
 }
 
 /** Implemented by App, consumed by InputController and SidebarPanel */

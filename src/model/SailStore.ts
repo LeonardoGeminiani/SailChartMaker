@@ -47,10 +47,10 @@ interface StoreState {
 }
 
 const DEFAULT_CHART_SETTINGS: ChartSettings = {
-  bgColor: '#ffffff', fontSize: 11, smoothing: 5,
+  bgColor: '#ffffff', fontSize: 11, sailLabelFontSize: 11, smoothing: 5,
   vmgStrokeWidth: 1.5, awsStrokeWidth: 1.0, axisStrokeScale: 1.0,
   twaMin: 30, twaMax: 160, twsMin: 0, twsMax: 30,
-  showAWS: false, resolution: 1,
+  showAWS: false, resolution: 0, chartMargin: 0,
 };
 
 // ── SailStore ─────────────────────────────────────────────────────────────────
@@ -144,6 +144,22 @@ export class SailStore {
     if (s) { s.visible = !s.visible; this.save(); }
   }
 
+  moveUp(id: number): void {
+    const i = this._state.sails.findIndex(s => s.id === id);
+    if (i <= 0) return;
+    this.pushUndo();
+    [this._state.sails[i - 1], this._state.sails[i]] = [this._state.sails[i], this._state.sails[i - 1]];
+    this.save();
+  }
+
+  moveDown(id: number): void {
+    const i = this._state.sails.findIndex(s => s.id === id);
+    if (i < 0 || i >= this._state.sails.length - 1) return;
+    this.pushUndo();
+    [this._state.sails[i], this._state.sails[i + 1]] = [this._state.sails[i + 1], this._state.sails[i]];
+    this.save();
+  }
+
   reset(): void {
     this.pushUndo();
     this._state = this._defaults();
@@ -195,18 +211,23 @@ export class SailStore {
   toXML(): string {
     const cs = this.chartSettings;
     const settingsAttr = [
-      `bgColor="${cs.bgColor}"`, `fontSize="${cs.fontSize}"`, `smoothing="${cs.smoothing}"`,
+      `bgColor="${cs.bgColor}"`, `fontSize="${cs.fontSize}"`,
+      `sailLabelFontSize="${cs.sailLabelFontSize}"`, `smoothing="${cs.smoothing}"`,
       `vmgStrokeWidth="${cs.vmgStrokeWidth}"`, `awsStrokeWidth="${cs.awsStrokeWidth}"`,
       `axisStrokeScale="${cs.axisStrokeScale}"`,
       `twaMin="${cs.twaMin}"`, `twaMax="${cs.twaMax}"`,
       `twsMin="${cs.twsMin}"`, `twsMax="${cs.twsMax}"`,
       `showAWS="${cs.showAWS}"`, `resolution="${cs.resolution}"`,
+      `chartMargin="${cs.chartMargin}"`,
     ].join(' ');
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<SailChart>\n`;
     xml += `  <ChartSettings ${settingsAttr}/>\n`;
     for (const s of this._state.sails) {
       const pts = s.points.map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ');
-      xml += `  <Sail name="${escXml(s.name)}" color="${s.color}" opacity="${s.opacity.toFixed(2)}" visible="${s.visible}" points="${pts}"/>\n`;
+      const loAttr = s.labelOffset
+        ? ` labelOffsetX="${s.labelOffset.x.toFixed(3)}" labelOffsetY="${s.labelOffset.y.toFixed(3)}"`
+        : '';
+      xml += `  <Sail name="${escXml(s.name)}" color="${s.color}" opacity="${s.opacity.toFixed(2)}" visible="${s.visible}" points="${pts}"${loAttr}/>\n`;
     }
     return xml + '</SailChart>';
   }
@@ -221,18 +242,20 @@ export class SailStore {
     if (csNode) {
       const g = (k: string, fb: string) => csNode.getAttribute(k) ?? fb;
       this.chartSettings = {
-        bgColor:         g('bgColor',         DEFAULT_CHART_SETTINGS.bgColor),
-        fontSize:        Number(g('fontSize',        String(DEFAULT_CHART_SETTINGS.fontSize))),
-        smoothing:       Number(g('smoothing',       String(DEFAULT_CHART_SETTINGS.smoothing))),
-        vmgStrokeWidth:  Number(g('vmgStrokeWidth',  String(DEFAULT_CHART_SETTINGS.vmgStrokeWidth))),
-        awsStrokeWidth:  Number(g('awsStrokeWidth',  String(DEFAULT_CHART_SETTINGS.awsStrokeWidth))),
-        axisStrokeScale: Number(g('axisStrokeScale', String(DEFAULT_CHART_SETTINGS.axisStrokeScale))),
-        twaMin:          Number(g('twaMin',          String(DEFAULT_CHART_SETTINGS.twaMin))),
-        twaMax:          Number(g('twaMax',          String(DEFAULT_CHART_SETTINGS.twaMax))),
-        twsMin:          Number(g('twsMin',          String(DEFAULT_CHART_SETTINGS.twsMin))),
-        twsMax:          Number(g('twsMax',          String(DEFAULT_CHART_SETTINGS.twsMax))),
-        showAWS:         g('showAWS', 'false') === 'true',
-        resolution:      Number(g('resolution',      String(DEFAULT_CHART_SETTINGS.resolution))),
+        bgColor:           g('bgColor',           DEFAULT_CHART_SETTINGS.bgColor),
+        fontSize:          Number(g('fontSize',          String(DEFAULT_CHART_SETTINGS.fontSize))),
+        sailLabelFontSize: Number(g('sailLabelFontSize', String(DEFAULT_CHART_SETTINGS.sailLabelFontSize))),
+        smoothing:         Number(g('smoothing',         String(DEFAULT_CHART_SETTINGS.smoothing))),
+        vmgStrokeWidth:    Number(g('vmgStrokeWidth',    String(DEFAULT_CHART_SETTINGS.vmgStrokeWidth))),
+        awsStrokeWidth:    Number(g('awsStrokeWidth',    String(DEFAULT_CHART_SETTINGS.awsStrokeWidth))),
+        axisStrokeScale:   Number(g('axisStrokeScale',   String(DEFAULT_CHART_SETTINGS.axisStrokeScale))),
+        twaMin:            Number(g('twaMin',            String(DEFAULT_CHART_SETTINGS.twaMin))),
+        twaMax:            Number(g('twaMax',            String(DEFAULT_CHART_SETTINGS.twaMax))),
+        twsMin:            Number(g('twsMin',            String(DEFAULT_CHART_SETTINGS.twsMin))),
+        twsMax:            Number(g('twsMax',            String(DEFAULT_CHART_SETTINGS.twsMax))),
+        showAWS:           g('showAWS', 'false') === 'true',
+        resolution:        Number(g('resolution',        String(DEFAULT_CHART_SETTINGS.resolution))),
+        chartMargin:       Number(g('chartMargin',       String(DEFAULT_CHART_SETTINGS.chartMargin))),
       };
     }
 
@@ -256,6 +279,11 @@ export class SailStore {
           parseFloat(n.getAttribute('ry') ?? '6'),
         );
       }
+      const loX = n.getAttribute('labelOffsetX');
+      const loY = n.getAttribute('labelOffsetY');
+      const labelOffset = loX !== null && loY !== null
+        ? { x: parseFloat(loX), y: parseFloat(loY) }
+        : undefined;
       sails.push({
         id: nextId++,
         name:    n.getAttribute('name')    ?? 'Sail',
@@ -263,6 +291,7 @@ export class SailStore {
         opacity: parseFloat(n.getAttribute('opacity') ?? '0.62') || 0.62,
         visible: n.getAttribute('visible') !== 'false',
         points,
+        labelOffset,
       });
     });
 

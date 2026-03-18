@@ -19,12 +19,21 @@ export class SidebarPanel {
     const counter = document.getElementById('sailCount');
     if (counter) counter.textContent = String(this.store.sails.length);
 
-    for (const s of this.store.sails) {
+    const sails = this.store.sails;
+    for (let idx = 0; idx < sails.length; idx++) {
+      const s = sails[idx];
+      const isFirst = idx === 0;
+      const isLast  = idx === sails.length - 1;
+
       const item = document.createElement('div');
       item.className = 'sail-item' + (s.id === this.store.selectedId ? ' selected' : '');
       item.setAttribute('role', 'option');
       item.setAttribute('aria-selected', String(s.id === this.store.selectedId));
       item.innerHTML = `
+        <div class="order-btns">
+          <button class="order-btn up-btn" title="Move up" data-id="${s.id}" ${isFirst ? 'disabled' : ''}>${this._chevronUpIcon()}</button>
+          <button class="order-btn dn-btn" title="Move down" data-id="${s.id}" ${isLast  ? 'disabled' : ''}>${this._chevronDnIcon()}</button>
+        </div>
         <div class="swatch" style="background:${s.color};border-color:rgba(0,0,0,0.12)"></div>
         <span class="sail-name" style="opacity:${s.visible ? 1 : 0.4}">${this._esc(s.name)}</span>
         <button class="vis-btn${s.visible ? '' : ' hidden'}" title="${s.visible ? 'Hide' : 'Show'}" data-id="${s.id}">
@@ -34,6 +43,20 @@ export class SidebarPanel {
       item.querySelector<HTMLButtonElement>('.vis-btn')!.addEventListener('click', e => {
         e.stopPropagation();
         this.store.toggleVis(s.id);
+        this.renderList();
+        this.onRedraw();
+      });
+
+      item.querySelector<HTMLButtonElement>('.up-btn')!.addEventListener('click', e => {
+        e.stopPropagation();
+        this.store.moveUp(s.id);
+        this.renderList();
+        this.onRedraw();
+      });
+
+      item.querySelector<HTMLButtonElement>('.dn-btn')!.addEventListener('click', e => {
+        e.stopPropagation();
+        this.store.moveDown(s.id);
         this.renderList();
         this.onRedraw();
       });
@@ -121,6 +144,14 @@ export class SidebarPanel {
     return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
     </svg>`;
+  }
+
+  private _chevronUpIcon(): string {
+    return `<svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10 L8 6 L12 10"/></svg>`;
+  }
+
+  private _chevronDnIcon(): string {
+    return `<svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6 L8 10 L12 6"/></svg>`;
   }
 
   private _eyeOffIcon(): string {

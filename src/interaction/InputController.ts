@@ -2,9 +2,12 @@ import { AppActions } from '../model/types.js';
 import { SailStore } from '../model/SailStore.js';
 import { CoordinateSystem } from '../canvas/CoordinateSystem.js';
 import { HitTester } from '../canvas/HitTester.js';
+import { SailRenderer } from '../canvas/SailRenderer.js';
 import { DragHandler } from './DragHandler.js';
 
 type CursorMoveCb = (twa: number, tws: number, sailName: string | null) => void;
+
+const LABEL_HIT_R = 30; // px radius around label anchor that counts as a hit
 
 // ── InputController ───────────────────────────────────────────────────────────
 export class InputController {
@@ -14,6 +17,7 @@ export class InputController {
     private readonly coords: CoordinateSystem,
     private readonly hitTester: HitTester,
     private readonly drag: DragHandler,
+    private readonly sailRend: SailRenderer,
     private readonly actions: AppActions,
     private readonly onCursorMove: CursorMoveCb,
   ) {}
@@ -44,7 +48,18 @@ export class InputController {
           return;
         }
       }
-      // 2. Hit a sail body?
+      // 2. Hit a label? Check all visible sails.
+      for (const s of [...this.store.sails].reverse()) {
+        if (!s.visible) continue;
+        const [lpx, lpy] = this.sailRend.getLabelPixelPos(s);
+        if (Math.hypot(px - lpx, py - lpy) <= LABEL_HIT_R) {
+          this.actions.selectSail(s.id);
+          this.store.pushUndo();
+          this.drag.startLabelDrag(s.id, px, py, lpx, lpy);
+          return;
+        }
+      }
+      // 3. Hit a sail body?
       const hit = this.hitTester.hitSail(px, py);
       if (hit) {
         this.actions.selectSail(hit.id);
@@ -152,6 +167,14 @@ export class InputController {
     }
     const s = this.store.find(this.store.selectedId);
     if (s && this.hitTester.hitPoint(px, py, s) >= 0) { this.canvas.style.cursor = 'grab'; return; }
+    // Label hit check
+    for (const sail of this.store.sails) {
+      if (!sail.visible) continue;
+      const [lpx, lpy] = this.sailRend.getLabelPixelPos(sail);
+      if (Math.hypot(px - lpx, py - lpy) <= LABEL_HIT_R) {
+        this.canvas.style.cursor = 'grab'; return;
+      }
+    }
     this.canvas.style.cursor = this.hitTester.hitSail(px, py) ? 'move' : 'default';
   }
 

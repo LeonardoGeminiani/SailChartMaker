@@ -69,8 +69,11 @@
   <aside class="sidebar">
     <div class="sidebar-tabs">
       <button class="sidebar-tab active" id="tabSails">Sails</button>
-      <button class="sidebar-tab" id="tabChart">Chart</button>
+      <button class="sidebar-tab" id="tabChart">Appearance</button>
     </div>
+
+    <div class="panels-viewport">
+    <div class="panels-track" id="panelsTrack">
 
     <!-- ── Sails panel ───────────────────────────────────────────────────── -->
     <div class="sidebar-panel" id="panelSails">
@@ -106,7 +109,7 @@
     </div>
 
     <!-- ── Chart settings panel ──────────────────────────────────────────── -->
-    <div class="sidebar-panel sidebar-panel--settings" id="panelChart" hidden>
+    <div class="sidebar-panel sidebar-panel--settings" id="panelChart">
 
       <div class="settings-section">Appearance</div>
       <div class="settings-row">
@@ -116,11 +119,19 @@
         </label>
       </div>
       <div class="settings-row">
-        <span class="settings-label">Label Font Size</span>
+        <span class="settings-label">Axis Font Size</span>
         <div class="settings-stepper">
           <button id="fontSizeDec" class="stepper-btn">−</button>
           <span id="fontSizeVal">11</span>
           <button id="fontSizeInc" class="stepper-btn">+</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">Sail Label Size</span>
+        <div class="settings-stepper">
+          <button id="sailLabelFontSizeDec" class="stepper-btn">−</button>
+          <span id="sailLabelFontSizeVal">11</span>
+          <button id="sailLabelFontSizeInc" class="stepper-btn">+</button>
         </div>
       </div>
       <div class="settings-row">
@@ -172,6 +183,16 @@
         </div>
       </div>
 
+      <div class="settings-section">Chart Margins</div>
+      <div class="settings-row">
+        <span class="settings-label">Border Offset</span>
+        <div class="settings-stepper">
+          <button id="chartMarginDec" class="stepper-btn">−</button>
+          <span id="chartMarginVal">0</span>
+          <button id="chartMarginInc" class="stepper-btn">+</button>
+        </div>
+      </div>
+
       <div class="settings-section">Canvas</div>
       <div class="settings-row">
         <span class="settings-label">Proportion</span>
@@ -184,9 +205,11 @@
       <div class="settings-row">
         <span class="settings-label">Resolution</span>
         <select id="canvasRes" class="ratio-select">
-          <option value="1" selected>1× screen</option>
-          <option value="2">2× high-DPI</option>
-          <option value="3">3× print</option>
+          <option value="0" selected>Screen (1×)</option>
+          <option value="1920">Full HD — 1920 × 1080</option>
+          <option value="2560">2K — 2560 × 1440</option>
+          <option value="3840">4K — 3840 × 2160</option>
+          <option value="5120">5K — 5120 × 2880</option>
         </select>
       </div>
 
@@ -206,6 +229,9 @@
       </div>
 
     </div><!-- /panelChart -->
+
+    </div><!-- /panels-track -->
+    </div><!-- /panels-viewport -->
   </aside>
 
   <div class="chart-area" id="chartArea">

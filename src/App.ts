@@ -70,6 +70,7 @@ export class App implements AppActions {
       this.coords,
       this.hitTest,
       this.drag,
+      this.sailRend,
       this,
       (twa, tws, sailName) => this._onCursorMove(twa, tws, sailName),
     );
@@ -92,6 +93,7 @@ export class App implements AppActions {
     this._setupToolbar();
     this._applySettings(this.store.chartSettings);
     this._setModeButtons('select');
+    this._watchDPR();
   }
 
   // ── AppActions ───────────────────────────────────────────────────────────────
@@ -165,15 +167,13 @@ export class App implements AppActions {
     this._btn('btnRedo', () => this.redo());
 
     // ── Sidebar tabs ─────────────────────────────────────────────────────────
-    const panelSails  = document.getElementById('panelSails')!;
-    const panelChart  = document.getElementById('panelChart')!;
+    const panelsTrack = document.getElementById('panelsTrack')!;
     const tabSails    = document.getElementById('tabSails')!;
     const tabChart    = document.getElementById('tabChart')!;
-    const switchTab = (toChart: boolean) => {
-      panelSails.hidden = toChart;
-      panelChart.hidden = !toChart;
-      tabSails.classList.toggle('active', !toChart);
-      tabChart.classList.toggle('active',  toChart);
+    const switchTab = (toAppearance: boolean) => {
+      panelsTrack.classList.toggle('show-appearance', toAppearance);
+      tabSails.classList.toggle('active', !toAppearance);
+      tabChart.classList.toggle('active',  toAppearance);
     };
     tabSails.addEventListener('click', () => switchTab(false));
     tabChart.addEventListener('click', () => switchTab(true));
@@ -220,10 +220,11 @@ export class App implements AppActions {
       this.bgRend.draw();
     });
 
-    // ── Font size ─────────────────────────────────────────────────────────────
+    // ── Axis font size ────────────────────────────────────────────────────────
     const fontSizeVal = document.getElementById('fontSizeVal')!;
     const updateFontSize = (delta: number) => {
-      this.bgRend.fontSize = Math.min(18, Math.max(7, this.bgRend.fontSize + delta));
+      this.bgRend.fontSize = Math.max(1, this.bgRend.fontSize + delta);
+      this.sailRend.axisFontSize = this.bgRend.fontSize;
       this.store.chartSettings.fontSize = this.bgRend.fontSize;
       fontSizeVal.textContent = String(this.bgRend.fontSize);
       this.store.save();
@@ -231,6 +232,32 @@ export class App implements AppActions {
     };
     this._btn('fontSizeDec', () => updateFontSize(-1));
     this._btn('fontSizeInc', () => updateFontSize(+1));
+
+    // ── Sail label font size ──────────────────────────────────────────────────
+    const sailLabelFontSizeVal = document.getElementById('sailLabelFontSizeVal')!;
+    const updateSailLabelFontSize = (delta: number) => {
+      this.sailRend.sailLabelFontSize = Math.max(1, this.sailRend.sailLabelFontSize + delta);
+      this.store.chartSettings.sailLabelFontSize = this.sailRend.sailLabelFontSize;
+      sailLabelFontSizeVal.textContent = String(this.sailRend.sailLabelFontSize);
+      this.store.save();
+      this.redraw();
+    };
+    this._btn('sailLabelFontSizeDec', () => updateSailLabelFontSize(-1));
+    this._btn('sailLabelFontSizeInc', () => updateSailLabelFontSize(+1));
+
+    // ── Chart margin ─────────────────────────────────────────────────────────
+    const chartMarginVal = document.getElementById('chartMarginVal')!;
+    const updateChartMargin = (delta: number) => {
+      const next = (this.store.chartSettings.chartMargin ?? 0) + delta;
+      this.store.chartSettings.chartMargin = next;
+      this.coords.setMargin(next);
+      chartMarginVal.textContent = String(next);
+      this.store.save();
+      this.bgRend.draw();
+      this.redraw();
+    };
+    this._btn('chartMarginDec', () => updateChartMargin(-5));
+    this._btn('chartMarginInc', () => updateChartMargin(+5));
 
     // ── Smoothing ─────────────────────────────────────────────────────────────
     const smoothingRange = document.getElementById('smoothingRange') as HTMLInputElement;
@@ -321,9 +348,11 @@ export class App implements AppActions {
 
   // ── Apply chart settings to renderers + sync all UI controls ─────────────────
   private _applySettings(s: import('./model/types.js').ChartSettings): void {
-    this.bgRend.bgColor         = s.bgColor;
-    this.bgRend.fontSize        = s.fontSize;
-    this.bgRend.smoothing       = s.smoothing;
+    this.bgRend.bgColor             = s.bgColor;
+    this.bgRend.fontSize            = s.fontSize;
+    this.sailRend.axisFontSize      = s.fontSize;
+    this.sailRend.sailLabelFontSize = s.sailLabelFontSize;
+    this.bgRend.smoothing         = s.smoothing;
     this.bgRend.vmgStrokeWidth  = s.vmgStrokeWidth;
     this.bgRend.awsStrokeWidth  = s.awsStrokeWidth;
     this.bgRend.axisStrokeScale = s.axisStrokeScale;
@@ -332,7 +361,9 @@ export class App implements AppActions {
     this.coords.twaMax          = s.twaMax;
     this.coords.twsMin          = s.twsMin;
     this.coords.twsMax          = s.twsMax;
-    this.resolution             = s.resolution;
+    this.coords.setMargin(s.chartMargin ?? 0);
+    // Normalize legacy multiplier values (1, 2, 3) to 0 (screen mode)
+    this.resolution = s.resolution <= 3 ? 0 : s.resolution;
 
     const set = <T extends HTMLInputElement | HTMLSelectElement>(id: string, v: string) => {
       const el = document.getElementById(id) as T | null;
@@ -345,13 +376,15 @@ export class App implements AppActions {
 
     set('bgColor',       s.bgColor);
     set('smoothingRange', String(s.smoothing));    setText('smoothingVal',  String(s.smoothing));
-    setText('fontSizeVal',   String(s.fontSize));
+    setText('fontSizeVal',          String(s.fontSize));
+    setText('sailLabelFontSizeVal', String(s.sailLabelFontSize));
     set('vmgStroke',     String(s.vmgStrokeWidth)); setText('vmgStrokeVal',  String(s.vmgStrokeWidth));
     set('awsStroke',     String(s.awsStrokeWidth)); setText('awsStrokeVal',  String(s.awsStrokeWidth));
     set('axisStroke',    String(s.axisStrokeScale));setText('axisStrokeVal', String(s.axisStrokeScale));
     set('twaMin', String(s.twaMin)); set('twaMax', String(s.twaMax));
     set('twsMin', String(s.twsMin)); set('twsMax', String(s.twsMax));
-    set('canvasRes', String(s.resolution));
+    set('canvasRes', String(this.resolution));
+    setText('chartMarginVal', String(s.chartMargin ?? 0));
 
     const awsTog = document.getElementById('toggleAWS') as HTMLInputElement | null;
     if (awsTog) awsTog.checked = this.bgRend.showAWS;
@@ -407,11 +440,28 @@ export class App implements AppActions {
       cv.style.top  = `${top}px`;
     }
 
-    this.bgRend.resolution   = this.resolution;
-    this.sailRend.resolution = this.resolution;
-    this.hitTest.resolution  = this.resolution;
+    // dpr keeps fonts/UI zoom-independent; effectiveRes sets canvas pixel count.
+    const dpr = window.devicePixelRatio || 1;
+    const effectiveRes = this.resolution === 0
+      ? dpr                       // "Screen" mode: match device pixels
+      : this.resolution / w;      // pixel-target mode: e.g. 1920 / logicalW
+    this.bgRend.dpr      = dpr;
+    this.sailRend.dpr    = dpr;
+    this.bgRend.resolution   = effectiveRes;
+    this.sailRend.resolution = effectiveRes;
+    this.hitTest.resolution  = effectiveRes;
     this.bgRend.resize(w, h);
     this.sailRend.resize(w, h);
     this.redraw();
+  }
+
+  /** Re-register a matchMedia listener each time devicePixelRatio changes
+   *  (browser zoom, moving the window between displays). */
+  private _watchDPR(): void {
+    const mq = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    mq.addEventListener('change', () => {
+      this._applySize(this.lastAreaW, this.lastAreaH);
+      this._watchDPR();
+    }, { once: true });
   }
 }

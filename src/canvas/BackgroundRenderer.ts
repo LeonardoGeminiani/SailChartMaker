@@ -46,6 +46,7 @@ export class BackgroundRenderer {
   fontSize  = 11;
   smoothing = 5;          // moving-average half-window (0 = off, 10 = max)
   resolution = 1;
+  dpr        = 1;
   vmgStrokeWidth = 1.5;
   awsStrokeWidth = 1.0;
   axisStrokeScale = 1.0;
@@ -68,6 +69,11 @@ export class BackgroundRenderer {
     this.coords.resize(w, h);
     this.draw();
   }
+
+  /** Convert a "zoom-independent CSS px" value to the current logical canvas unit.
+   *  Use this for font sizes and fixed pixel offsets so they stay the same
+   *  physical size regardless of devicePixelRatio / browser zoom. */
+  private _px(v: number): number { return v / this.dpr; }
 
   draw(): void {
     const c = this.ctx;
@@ -137,19 +143,19 @@ export class BackgroundRenderer {
     c.lineWidth = 1 * this.axisStrokeScale;
     for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += 5) {
       const [px] = this.coords.toPixel(x, 0);
-      const sz = x % 15 === 0 ? 5 : 3;
-      seg(c, px, H - b, px, H - b + sz);
-      seg(c, px, t,     px, t - sz);
+      const sz = this._px(x % 15 === 0 ? 5 : 3);
+      seg(c, px, H - b,      px, H - b + sz);
+      seg(c, px, t,          px, t - sz);
     }
     for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 2) {
       const [, py] = this.coords.toPixel(0, y);
-      const sz = y % 5 === 0 ? 5 : 3;
+      const sz = this._px(y % 5 === 0 ? 5 : 3);
       seg(c, l,     py, l - sz,     py);
       seg(c, W - r, py, W - r + sz, py);
     }
 
     // Axis labels
-    c.font      = `${this.fontSize}px "Azeret Mono", monospace`;
+    c.font      = `${this._px(this.fontSize)}pt "Azeret Mono", monospace`;
     c.fillStyle = 'rgba(40,65,100,0.75)';
 
     // X bottom
@@ -157,36 +163,36 @@ export class BackgroundRenderer {
     c.textBaseline = 'top';
     for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += 15) {
       const [px] = this.coords.toPixel(x, 0);
-      c.fillText(x + '°', px, H - b + 8);
+      c.fillText(x + '°', px, H - b + this._px(8));
     }
     // X top
     c.textBaseline = 'bottom';
     for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += 15) {
       const [px] = this.coords.toPixel(x, 0);
-      c.fillText(x + '°', px, t - 8);
+      c.fillText(x + '°', px, t - this._px(8));
     }
     // Y left
     c.textAlign    = 'right';
     c.textBaseline = 'middle';
     for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 5) {
       const [, py] = this.coords.toPixel(0, y);
-      c.fillText(String(y), l - 10, py);
+      c.fillText(String(y), l - this._px(10), py);
     }
     // Y right
     c.textAlign = 'left';
     for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 5) {
       const [, py] = this.coords.toPixel(0, y);
-      c.fillText(String(y), W - r + 10, py);
+      c.fillText(String(y), W - r + this._px(10), py);
     }
 
     // Axis titles
     c.fillStyle    = 'rgba(50,75,115,0.55)';
-    c.font         = `${this.fontSize + 0.5}px "Outfit", sans-serif`;
+    c.font         = `${this._px(this.fontSize + 0.5)}pt "Outfit", sans-serif`;
     c.textAlign    = 'center';
     c.textBaseline = 'bottom';
-    c.fillText('True Wind Angle — TWA (°)', l + cw / 2, H - 2);
+    c.fillText('True Wind Angle — TWA (°)', l + cw / 2, H - this._px(2));
     c.save();
-    c.translate(11, t + ch / 2);
+    c.translate(this._px(11), t + ch / 2);
     c.rotate(-Math.PI / 2);
     c.textBaseline = 'top';
     c.fillText('True Wind Speed — TWS (kts)', 0, 0);
@@ -203,18 +209,22 @@ export class BackgroundRenderer {
     const twsMin = Math.max(polar.minTWS, this.coords.twsMin);
     const twsMax = Math.min(polar.maxTWS, this.coords.twsMax);
 
+    // Clamp TWA search to polar file's actual range to avoid extrapolation artefacts
+    const twaSearchMin = Math.max(polar.minTWA, this.coords.twaMin);
+    const twaSearchMax = Math.min(polar.maxTWA, this.coords.twaMax);
+
     const upPts:  [number, number][] = [];
     const dnPts:  [number, number][] = [];
 
     for (let tws = twsMin; tws <= twsMax + 0.01; tws += 0.25) {
-      let bestUpVMG = -Infinity, bestUpTWA = this.coords.twaMin;
-      let bestDnVMG =  Infinity, bestDnTWA = this.coords.twaMax;
+      let bestUpVMG = -Infinity, bestUpTWA = twaSearchMin;
+      let bestDnVMG =  Infinity, bestDnTWA = twaSearchMax;
 
-      for (let twa = this.coords.twaMin; twa <= 90; twa += 0.5) {
+      for (let twa = twaSearchMin; twa <= Math.min(90, twaSearchMax); twa += 0.5) {
         const vmg = polar.getBSP(twa, tws) * Math.cos(twa * Math.PI / 180);
         if (vmg > bestUpVMG) { bestUpVMG = vmg; bestUpTWA = twa; }
       }
-      for (let twa = 90; twa <= this.coords.twaMax; twa += 0.5) {
+      for (let twa = Math.max(90, twaSearchMin); twa <= twaSearchMax; twa += 0.5) {
         const vmg = polar.getBSP(twa, tws) * Math.cos(twa * Math.PI / 180);
         if (vmg < bestDnVMG) { bestDnVMG = vmg; bestDnTWA = twa; }
       }
@@ -253,11 +263,11 @@ export class BackgroundRenderer {
       const midIdx = Math.floor(pts.length * 0.35);
       const [twa60, tws60] = pts[midIdx];
       const [lx, ly] = this.coords.toPixel(twa60, tws60);
-      c.font      = `bold ${this.fontSize - 1}px "Azeret Mono", monospace`;
+      c.font      = `bold ${this._px(Math.max(1, this.fontSize - 1))}pt "Azeret Mono", monospace`;
       c.fillStyle = 'rgba(180,20,20,0.85)';
       c.textAlign    = align;
       c.textBaseline = 'middle';
-      c.fillText(label, align === 'left' ? lx + 4 : lx - 4, ly);
+      c.fillText(label, align === 'left' ? lx + this._px(4) : lx - this._px(4), ly);
     };
 
     labelCurve(upPts, 'UpVMG', 'right');
@@ -313,11 +323,11 @@ export class BackgroundRenderer {
       c.stroke();
       c.setLineDash([]);
 
-      c.font         = `${this.fontSize - 2}px "Azeret Mono", monospace`;
+      c.font         = `${this._px(Math.max(1, this.fontSize - 2))}pt "Azeret Mono", monospace`;
       c.fillStyle    = 'rgba(30,60,150,0.65)';
       c.textAlign    = 'left';
       c.textBaseline = 'bottom';
-      c.fillText(`aws${aws}`, labelPx + 2, labelPy - 1);
+      c.fillText(`aws${aws}`, labelPx + this._px(2), labelPy - this._px(1));
     }
 
     c.restore();

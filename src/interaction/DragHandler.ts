@@ -1,7 +1,7 @@
 import { SailData, SailPoint } from '../model/types.js';
 import { CoordinateSystem } from '../canvas/CoordinateSystem.js';
 
-export type DragType = 'point' | 'shape';
+export type DragType = 'point' | 'shape' | 'label';
 
 interface PointDrag {
   type: 'point';
@@ -21,7 +21,17 @@ interface ShapeDrag {
   origPoints: SailPoint[]; // snapshot taken at drag start
 }
 
-type DragState = PointDrag | ShapeDrag;
+interface LabelDrag {
+  type: 'label';
+  sailId: number;
+  startPx: number;
+  startPy: number;
+  // pixel offset from click point to label center (so label doesn't jump)
+  hitOffsetX: number;
+  hitOffsetY: number;
+}
+
+type DragState = PointDrag | ShapeDrag | LabelDrag;
 
 // ── DragHandler ───────────────────────────────────────────────────────────────
 export class DragHandler {
@@ -45,7 +55,17 @@ export class DragHandler {
     };
   }
 
-  /** Apply the current pointer position to mutate sail.points in place. */
+  /** labelPx/labelPy: the current pixel position of the label anchor. */
+  startLabelDrag(sailId: number, px: number, py: number, labelPx: number, labelPy: number): void {
+    this.state = {
+      type: 'label', sailId,
+      startPx: px, startPy: py,
+      hitOffsetX: labelPx - px,
+      hitOffsetY: labelPy - py,
+    };
+  }
+
+  /** Apply the current pointer position to mutate sail in place. */
   apply(px: number, py: number, sail: SailData): void {
     if (!this.state) return;
 
@@ -55,7 +75,7 @@ export class DragHandler {
       const [nx, ny]   = this.coords.fromPixel(opx + (px - startPx), opy + (py - startPy));
       const [cx, cy]   = this.coords.clamp(nx, ny);
       sail.points[pointIndex] = { x: cx, y: cy };
-    } else {
+    } else if (this.state.type === 'shape') {
       const { origPoints, startPx, startPy } = this.state;
       const ddx = px - startPx;
       const ddy = py - startPy;
@@ -65,6 +85,14 @@ export class DragHandler {
         const [cx, cy]   = this.coords.clamp(nx, ny);
         return { x: cx, y: cy };
       });
+    } else {
+      // label drag — update labelOffset relative to centroid
+      const { hitOffsetX, hitOffsetY } = this.state;
+      const [lx, ly] = this.coords.fromPixel(px + hitOffsetX, py + hitOffsetY);
+      const [clx, cly] = this.coords.clamp(lx, ly);
+      const cx = sail.points.reduce((a, p) => a + p.x, 0) / sail.points.length;
+      const cy = sail.points.reduce((a, p) => a + p.y, 0) / sail.points.length;
+      sail.labelOffset = { x: clx - cx, y: cly - cy };
     }
   }
 
