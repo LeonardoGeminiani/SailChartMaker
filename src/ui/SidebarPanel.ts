@@ -1,3 +1,4 @@
+import { FillPattern } from '../model/types.js';
 import { SailStore } from '../model/SailStore.js';
 
 // ── SidebarPanel ──────────────────────────────────────────────────────────────
@@ -114,9 +115,11 @@ export class SidebarPanel {
   syncEditor(): void {
     const s = this.store.find(this.store.selectedId);
     if (!s) return;
-    (document.getElementById('edName')    as HTMLInputElement).value = s.name;
-    (document.getElementById('edColor')   as HTMLInputElement).value = s.color;
-    (document.getElementById('edOpacity') as HTMLInputElement).value = String(Math.round(s.opacity * 100));
+    (document.getElementById('edName')        as HTMLInputElement).value  = s.name;
+    (document.getElementById('edColor')       as HTMLInputElement).value  = s.color;
+    (document.getElementById('edOpacity')     as HTMLInputElement).value  = String(Math.round(s.opacity * 100));
+    (document.getElementById('edShowFill')    as HTMLInputElement).checked = s.showFill !== false;
+    (document.getElementById('edFillPattern') as HTMLSelectElement).value = s.fillPattern ?? 'none';
     document.getElementById('edTitle')!.textContent = s.name;
     this.editDirty = false;
   }
@@ -149,6 +152,11 @@ export class SidebarPanel {
     edColor.addEventListener('change', () => { this.store.pushUndo(); this._applyEdit(); });
     edColor.addEventListener('input',  () => { this._applyEdit(); });
 
+    const edShowFill    = document.getElementById('edShowFill')    as HTMLInputElement;
+    const edFillPattern = document.getElementById('edFillPattern') as HTMLSelectElement;
+    edShowFill.addEventListener('change',    () => { onFirst(); this._applyEdit(); });
+    edFillPattern.addEventListener('change', () => { onFirst(); this._applyEdit(); });
+
     document.getElementById('btnDelSail')!.addEventListener('click', () => this.onDelete());
   }
 
@@ -156,9 +164,11 @@ export class SidebarPanel {
   private _applyEdit(): void {
     const s = this.store.find(this.store.selectedId);
     if (!s) return;
-    s.name    = (document.getElementById('edName')    as HTMLInputElement).value;
-    s.color   = (document.getElementById('edColor')   as HTMLInputElement).value;
-    s.opacity = parseInt((document.getElementById('edOpacity') as HTMLInputElement).value, 10) / 100;
+    s.name        = (document.getElementById('edName')        as HTMLInputElement).value;
+    s.color       = (document.getElementById('edColor')       as HTMLInputElement).value;
+    s.opacity     = parseInt((document.getElementById('edOpacity') as HTMLInputElement).value, 10) / 100;
+    s.showFill    = (document.getElementById('edShowFill')    as HTMLInputElement).checked;
+    s.fillPattern = (document.getElementById('edFillPattern') as HTMLSelectElement).value as FillPattern;
     this.store.save();
     document.getElementById('edTitle')!.textContent = s.name || 'Edit Sail';
     this.renderList();

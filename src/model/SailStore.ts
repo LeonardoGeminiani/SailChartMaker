@@ -1,4 +1,4 @@
-import { SailData, SailPoint, ChartSettings, LabelAnnotation } from './types.js';
+import { SailData, SailPoint, FillPattern, ChartSettings, LabelAnnotation } from './types.js';
 import { UndoManager } from './UndoManager.js';
 
 // ── Chart domain constants ────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ const DEFAULT_CHART_SETTINGS: ChartSettings = {
   bgColor: '#ffffff', fontSize: 11, sailLabelFontSize: 11, smoothing: 5,
   vmgStrokeWidth: 1.5, awsStrokeWidth: 1.0, axisStrokeScale: 1.0,
   twaMin: 30, twaMax: 160, twsMin: 0, twsMax: 30,
-  showAWS: false, resolution: 0, chartMargin: 0,
+  showAWS: false, patternScale: 1, patternThickness: 1, twsReversed: false, resolution: 0, chartMargin: 0,
 };
 
 // ── SailStore ─────────────────────────────────────────────────────────────────
@@ -112,12 +112,14 @@ export class SailStore {
   add(props: Partial<SailData> & { ox?: number; oy?: number; rx?: number; ry?: number }): SailData {
     this.pushUndo();
     const sail: SailData = {
-      id:      this._state.nextId++,
-      name:    props.name    ?? 'Sail',
-      color:   props.color   ?? '#4f8ef7',
-      opacity: props.opacity ?? 0.62,
-      visible: props.visible ?? true,
-      points:  props.points  ?? makeOval(props.ox ?? 90, props.oy ?? 15, props.rx ?? 20, props.ry ?? 6),
+      id:          this._state.nextId++,
+      name:        props.name        ?? 'Sail',
+      color:       props.color       ?? '#4f8ef7',
+      opacity:     props.opacity     ?? 0.62,
+      visible:     props.visible     ?? true,
+      showFill:    props.showFill    ?? true,
+      fillPattern: props.fillPattern ?? 'none',
+      points:      props.points      ?? makeOval(props.ox ?? 90, props.oy ?? 15, props.rx ?? 20, props.ry ?? 6),
     };
     this._state.sails.push(sail);
     this.save();
@@ -233,7 +235,8 @@ export class SailStore {
     let nextId = 1;
     const sails = DEFAULT_DEFS.map(d => ({
       id: nextId++, name: d.name, color: d.color,
-      opacity: 0.62, visible: true, points: makeOval(d.ox, d.oy, d.rx, d.ry),
+      opacity: 0.62, visible: true, showFill: true, fillPattern: 'none' as FillPattern,
+      points: makeOval(d.ox, d.oy, d.rx, d.ry),
     }));
     return { sails, annotations: [], nextId, nextAnnId: 1 };
   }
@@ -252,7 +255,7 @@ export class SailStore {
       `axisStrokeScale="${cs.axisStrokeScale}"`,
       `twaMin="${cs.twaMin}"`, `twaMax="${cs.twaMax}"`,
       `twsMin="${cs.twsMin}"`, `twsMax="${cs.twsMax}"`,
-      `showAWS="${cs.showAWS}"`, `resolution="${cs.resolution}"`,
+      `showAWS="${cs.showAWS}"`, `patternScale="${cs.patternScale}"`, `patternThickness="${cs.patternThickness}"`, `twsReversed="${cs.twsReversed}"`, `resolution="${cs.resolution}"`,
       `chartMargin="${cs.chartMargin}"`,
     ].join(' ');
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<SailChart>\n`;
@@ -262,7 +265,8 @@ export class SailStore {
       const loAttr = s.labelOffset
         ? ` labelOffsetX="${s.labelOffset.x.toFixed(3)}" labelOffsetY="${s.labelOffset.y.toFixed(3)}"`
         : '';
-      xml += `  <Sail name="${escXml(s.name)}" color="${s.color}" opacity="${s.opacity.toFixed(2)}" visible="${s.visible}" points="${pts}"${loAttr}/>\n`;
+      const fillAttr = ` showFill="${s.showFill ?? true}" fillPattern="${s.fillPattern ?? 'none'}"`;
+      xml += `  <Sail name="${escXml(s.name)}" color="${s.color}" opacity="${s.opacity.toFixed(2)}" visible="${s.visible}"${fillAttr} points="${pts}"${loAttr}/>\n`;
     }
     for (const a of this._state.annotations) {
       xml += `  <Label id="${a.id}" text="${escXml(a.text)}" x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}" color="${a.color}"/>\n`;
@@ -291,7 +295,10 @@ export class SailStore {
         twaMax:            Number(g('twaMax',            String(DEFAULT_CHART_SETTINGS.twaMax))),
         twsMin:            Number(g('twsMin',            String(DEFAULT_CHART_SETTINGS.twsMin))),
         twsMax:            Number(g('twsMax',            String(DEFAULT_CHART_SETTINGS.twsMax))),
-        showAWS:           g('showAWS', 'false') === 'true',
+        showAWS:           g('showAWS',      'false') === 'true',
+        patternScale:      Number(g('patternScale',     '1')),
+        patternThickness:  Number(g('patternThickness', '1')),
+        twsReversed:       g('twsReversed',  'false') === 'true',
         resolution:        Number(g('resolution',        String(DEFAULT_CHART_SETTINGS.resolution))),
         chartMargin:       Number(g('chartMargin',       String(DEFAULT_CHART_SETTINGS.chartMargin))),
       };
@@ -324,10 +331,12 @@ export class SailStore {
         : undefined;
       sails.push({
         id: nextId++,
-        name:    n.getAttribute('name')    ?? 'Sail',
-        color:   n.getAttribute('color')   ?? '#4f8ef7',
-        opacity: parseFloat(n.getAttribute('opacity') ?? '0.62') || 0.62,
-        visible: n.getAttribute('visible') !== 'false',
+        name:        n.getAttribute('name')    ?? 'Sail',
+        color:       n.getAttribute('color')   ?? '#4f8ef7',
+        opacity:     parseFloat(n.getAttribute('opacity') ?? '0.62') || 0.62,
+        visible:     n.getAttribute('visible') !== 'false',
+        showFill:    n.getAttribute('showFill') !== 'false',
+        fillPattern: (n.getAttribute('fillPattern') ?? 'none') as FillPattern,
         points,
         labelOffset,
       });

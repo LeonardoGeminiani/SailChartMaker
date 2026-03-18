@@ -510,6 +510,10 @@ button.btn-danger:hover { background: var(--danger-glow); border-color: rgba(192
 .field-row { display: flex; gap: 8px; }
 .field-row .field { flex: 1; }
 
+.field--check { flex-direction: row; align-items: center; gap: 7px; }
+.field--check input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.field-row--fill { margin-top: 2px; }
+
 input[type="text"],
 input[type="number"] {
   width: 100%;

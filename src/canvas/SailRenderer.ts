@@ -1,4 +1,4 @@
-import { SailData, LabelAnnotation, EditMode, CursorPosition } from '../model/types.js';
+import { SailData, LabelAnnotation, FillPattern, EditMode, CursorPosition } from '../model/types.js';
 import { SailStore } from '../model/SailStore.js';
 import { CoordinateSystem, splinePath } from './CoordinateSystem.js';
 
@@ -21,7 +21,10 @@ export class SailRenderer {
   dpr                = 1;
   sailLabelFontSize  = 11;
   axisFontSize       = 11;
+  patternScale       = 1;
+  patternThickness   = 1;
   cursor: CursorPosition | null = null;
+  private _patCache = new Map<string, CanvasPattern | null>();
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -55,12 +58,19 @@ export class SailRenderer {
     c.rect(l, t, cw, ch);
     c.clip();
 
-    // Pass 1 — fills
+    // Pass 1 — fills + patterns
     for (const s of this.store.sails) {
       if (!s.visible || s.points.length < 3) continue;
       splinePath(c, s.points, this.coords);
-      c.fillStyle = `rgba(${hexToRgb(s.color)},${s.opacity})`;
-      c.fill();
+      if (s.showFill !== false) {
+        c.fillStyle = `rgba(${hexToRgb(s.color)},${s.opacity})`;
+        c.fill();
+      }
+      const pat = s.fillPattern ?? 'none';
+      if (pat !== 'none') {
+        const pattern = this._makePattern(s.color, pat);
+        if (pattern) { c.fillStyle = pattern; c.fill(); }
+      }
     }
 
     // Pass 2 — borders, labels, handles
@@ -96,6 +106,69 @@ export class SailRenderer {
     const lx = cx + (s.labelOffset?.x ?? 0);
     const ly = cy + (s.labelOffset?.y ?? 0);
     return this.coords.toPixel(lx, ly);
+  }
+
+  // ── Fill pattern generator ────────────────────────────────────────────────
+  private _makePattern(color: string, pattern: FillPattern): CanvasPattern | null {
+    const key = `${color}_${pattern}_${this.resolution.toFixed(3)}_${this.patternScale.toFixed(2)}_${this.patternThickness.toFixed(2)}`;
+    if (this._patCache.has(key)) return this._patCache.get(key)!;
+
+    // Tile is `spacing` logical units → spacing * resolution physical pixels
+    const spacing = Math.round(10 * this.resolution * this.patternScale);
+    const s = Math.max(4, spacing);
+    const oc = document.createElement('canvas');
+    oc.width = s; oc.height = s;
+    const ox = oc.getContext('2d')!;
+
+    const lw = Math.max(0.5, this.resolution * this.patternThickness);
+    ox.strokeStyle = `rgba(${hexToRgb(color)},0.80)`;
+    ox.fillStyle   = `rgba(${hexToRgb(color)},0.80)`;
+    ox.lineWidth   = lw;
+
+    const drawLines45 = () => {
+      for (let i = -1; i <= 2; i++) {
+        ox.beginPath();
+        ox.moveTo(i * s / 2,         0);
+        ox.lineTo(i * s / 2 + s,     s);
+        ox.stroke();
+      }
+    };
+    const drawLines135 = () => {
+      for (let i = -1; i <= 2; i++) {
+        ox.beginPath();
+        ox.moveTo(i * s / 2 + s,     0);
+        ox.lineTo(i * s / 2,         s);
+        ox.stroke();
+      }
+    };
+
+    switch (pattern) {
+      case 'lines45':    drawLines45(); break;
+      case 'lines135':   drawLines135(); break;
+      case 'crosshatch': drawLines45(); drawLines135(); break;
+      case 'horizontal':
+        for (let y = 0; y < s; y += s / 2) {
+          ox.beginPath(); ox.moveTo(0, y); ox.lineTo(s, y); ox.stroke();
+        }
+        break;
+      case 'vertical':
+        for (let x = 0; x < s; x += s / 2) {
+          ox.beginPath(); ox.moveTo(x, 0); ox.lineTo(x, s); ox.stroke();
+        }
+        break;
+      case 'dots': {
+        const r = s / 5;
+        ox.beginPath(); ox.arc(s / 2, s / 2, r, 0, Math.PI * 2); ox.fill();
+        for (const [cx, cy] of [[0,0],[s,0],[0,s],[s,s]] as [number,number][]) {
+          ox.beginPath(); ox.arc(cx, cy, r / 2, 0, Math.PI * 2); ox.fill();
+        }
+        break;
+      }
+    }
+
+    const result = this.ctx.createPattern(oc, 'repeat');
+    this._patCache.set(key, result);
+    return result;
   }
 
   // ── Label: bold name + crosshair (+) ─────────────────────────────────────

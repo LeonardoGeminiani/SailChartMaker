@@ -202,6 +202,16 @@ export class App implements AppActions {
       this.bgRend.draw();
     });
 
+
+    const twsRevToggle = document.getElementById('toggleTWSReversed') as HTMLInputElement | null;
+    twsRevToggle?.addEventListener('change', () => {
+      this.coords.twsReversed = twsRevToggle.checked;
+      this.store.chartSettings.twsReversed = twsRevToggle.checked;
+      this.store.save();
+      this.bgRend.draw();
+      this.redraw();
+    });
+
     this._btn('btnLoadPolar', () => polarInput.click());
     polarInput.addEventListener('change', e => {
       const file = (e.target as HTMLInputElement).files?.[0];
@@ -256,6 +266,32 @@ export class App implements AppActions {
     };
     this._btn('sailLabelFontSizeDec', () => updateSailLabelFontSize(-1));
     this._btn('sailLabelFontSizeInc', () => updateSailLabelFontSize(+1));
+
+    // ── Pattern scale ────────────────────────────────────────────────────────
+    const patternScaleVal = document.getElementById('patternScaleVal')!;
+    const updatePatternScale = (delta: number) => {
+      const next = Math.max(0.5, Math.round((this.store.chartSettings.patternScale + delta) * 10) / 10);
+      this.store.chartSettings.patternScale = next;
+      this.sailRend.patternScale = next;
+      patternScaleVal.textContent = next.toFixed(1);
+      this.store.save();
+      this.redraw();
+    };
+    this._btn('patternScaleDec', () => updatePatternScale(-0.5));
+    this._btn('patternScaleInc', () => updatePatternScale(+0.5));
+
+    // ── Pattern thickness ────────────────────────────────────────────────────
+    const patternThicknessVal = document.getElementById('patternThicknessVal')!;
+    const updatePatternThickness = (delta: number) => {
+      const next = Math.max(0.5, Math.round((this.store.chartSettings.patternThickness + delta) * 10) / 10);
+      this.store.chartSettings.patternThickness = next;
+      this.sailRend.patternThickness = next;
+      patternThicknessVal.textContent = next.toFixed(1);
+      this.store.save();
+      this.redraw();
+    };
+    this._btn('patternThicknessDec', () => updatePatternThickness(-0.5));
+    this._btn('patternThicknessInc', () => updatePatternThickness(+0.5));
 
     // ── Chart margin ─────────────────────────────────────────────────────────
     const chartMarginVal = document.getElementById('chartMarginVal')!;
@@ -365,6 +401,8 @@ export class App implements AppActions {
     this.bgRend.fontSize            = s.fontSize;
     this.sailRend.axisFontSize      = s.fontSize;
     this.sailRend.sailLabelFontSize = s.sailLabelFontSize;
+    this.sailRend.patternScale      = s.patternScale     ?? 1;
+    this.sailRend.patternThickness  = s.patternThickness ?? 1;
     this.bgRend.smoothing         = s.smoothing;
     this.bgRend.vmgStrokeWidth  = s.vmgStrokeWidth;
     this.bgRend.awsStrokeWidth  = s.awsStrokeWidth;
@@ -374,6 +412,7 @@ export class App implements AppActions {
     this.coords.twaMax          = s.twaMax;
     this.coords.twsMin          = s.twsMin;
     this.coords.twsMax          = s.twsMax;
+    this.coords.twsReversed     = s.twsReversed ?? false;
     this.coords.setMargin(s.chartMargin ?? 0);
     // Normalize legacy multiplier values (1, 2, 3) to 0 (screen mode)
     this.resolution = s.resolution <= 3 ? 0 : s.resolution;
@@ -391,6 +430,8 @@ export class App implements AppActions {
     set('smoothingRange', String(s.smoothing));    setText('smoothingVal',  String(s.smoothing));
     setText('fontSizeVal',          String(s.fontSize));
     setText('sailLabelFontSizeVal', String(s.sailLabelFontSize));
+    setText('patternScaleVal',     (s.patternScale     ?? 1).toFixed(1));
+    setText('patternThicknessVal', (s.patternThickness ?? 1).toFixed(1));
     set('vmgStroke',     String(s.vmgStrokeWidth)); setText('vmgStrokeVal',  String(s.vmgStrokeWidth));
     set('awsStroke',     String(s.awsStrokeWidth)); setText('awsStrokeVal',  String(s.awsStrokeWidth));
     set('axisStroke',    String(s.axisStrokeScale));setText('axisStrokeVal', String(s.axisStrokeScale));
@@ -401,6 +442,8 @@ export class App implements AppActions {
 
     const awsTog = document.getElementById('toggleAWS') as HTMLInputElement | null;
     if (awsTog) awsTog.checked = this.bgRend.showAWS;
+    const twsRevTog = document.getElementById('toggleTWSReversed') as HTMLInputElement | null;
+    if (twsRevTog) twsRevTog.checked = s.twsReversed ?? false;
 
     this._applySize(this.lastAreaW, this.lastAreaH);
   }

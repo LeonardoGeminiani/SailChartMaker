@@ -26,22 +26,29 @@ export class CoordinateSystem {
   twaMax = X_MAX;
   twsMin = Y_MIN;
   twsMax = Y_MAX;
+  twsReversed = false; // when true: twsMax at bottom, twsMin at top
 
   resize(w: number, h: number): void { this.W = w; this.H = h; }
 
   toPixel(dx: number, dy: number): [number, number] {
     const { l, r, t, b } = this.pad;
+    const cw = this.W - l - r;
+    const ch = this.H - t - b;
+    const t_frac = (dy - this.twsMin) / (this.twsMax - this.twsMin);
     return [
-      l + (dx - this.twaMin) / (this.twaMax - this.twaMin) * (this.W - l - r),
-      this.H - b - (dy - this.twsMin) / (this.twsMax - this.twsMin) * (this.H - t - b),
+      l + (dx - this.twaMin) / (this.twaMax - this.twaMin) * cw,
+      this.twsReversed ? t + t_frac * ch : this.H - b - t_frac * ch,
     ];
   }
 
   fromPixel(px: number, py: number): [number, number] {
     const { l, r, t, b } = this.pad;
+    const cw = this.W - l - r;
+    const ch = this.H - t - b;
+    const t_frac = this.twsReversed ? (py - t) / ch : (this.H - b - py) / ch;
     return [
-      this.twaMin + (px - l) / (this.W - l - r) * (this.twaMax - this.twaMin),
-      this.twsMin + (this.H - b - py) / (this.H - t - b) * (this.twsMax - this.twsMin),
+      this.twaMin + (px - l) / cw * (this.twaMax - this.twaMin),
+      this.twsMin + t_frac * (this.twsMax - this.twsMin),
     ];
   }
 

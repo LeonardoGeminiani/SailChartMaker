@@ -3,12 +3,16 @@ export interface SailPoint {
   y: number;
 }
 
+export type FillPattern = 'none' | 'lines45' | 'lines135' | 'crosshatch' | 'horizontal' | 'vertical' | 'dots';
+
 export interface SailData {
   id: number;
   name: string;
   color: string;
   opacity: number;
   visible: boolean;
+  showFill: boolean;
+  fillPattern: FillPattern;
   points: SailPoint[];
   labelOffset?: SailPoint; // offset from centroid in data coords (TWA, TWS)
 }
@@ -41,6 +45,9 @@ export interface ChartSettings {
   twsMin:             number;
   twsMax:             number;
   showAWS:            boolean;
+  patternScale:       number;
+  patternThickness:   number;
+  twsReversed:        boolean;
   resolution:         number;
   chartMargin:        number;
 }
