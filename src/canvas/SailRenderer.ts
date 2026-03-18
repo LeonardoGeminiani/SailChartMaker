@@ -23,6 +23,7 @@ export class SailRenderer {
   axisFontSize       = 11;
   patternScale       = 1;
   patternThickness   = 1;
+  showLegend         = false;
   cursor: CursorPosition | null = null;
   private _patCache = new Map<string, CanvasPattern | null>();
 
@@ -85,7 +86,7 @@ export class SailRenderer {
       c.stroke();
       c.setLineDash([]);
 
-      this._drawLabel(c, s, sel);
+      if (s.showLabel !== false) this._drawLabel(c, s, sel);
 
       if (sel) this._drawHandles(c, s, mode);
     }
@@ -94,6 +95,9 @@ export class SailRenderer {
     this._drawAnnotations(c);
 
     c.restore();
+
+    // Legend (outside chart clip, in right margin)
+    if (this.showLegend) this._drawLegend(c);
 
     // Cursor axis indicators (outside clip)
     if (this.cursor) this._drawCursorIndicators(c);
@@ -279,6 +283,90 @@ export class SailRenderer {
       // Text
       c.fillStyle = a.color;
       c.fillText(a.text, px, py);
+    }
+  }
+
+  // ── Right-side legend ─────────────────────────────────────────────────────
+  private _wrapText(c: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let cur = '';
+    for (const word of words) {
+      const test = cur ? cur + ' ' + word : word;
+      if (c.measureText(test).width <= maxW) {
+        cur = test;
+      } else {
+        if (cur) lines.push(cur);
+        // If a single word is wider than maxW, push it as-is
+        cur = word;
+      }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  private _drawLegend(c: CanvasRenderingContext2D): void {
+    const { x: cl, y: ct, w: cw, h: ch } = this.coords.chartRect;
+    const { W } = this.coords;
+    const gap   = this._px(10);             // gap between chart edge and legend
+    const rPad  = this._px(6);              // right margin
+    const lx    = cl + cw + gap;            // legend left edge
+    const lw    = W - lx - rPad;           // available legend width
+    if (lw < this._px(30)) return;
+
+    const fs       = this._px(this.sailLabelFontSize);
+    const lineH    = fs * (4 / 3);         // line height in canvas units
+    const padV     = this._px(6);          // vertical padding inside swatch
+    const swW      = lw;                   // swatch spans full legend width
+    const rowGap   = this._px(10);         // gap between rows
+    const textPadH = this._px(4);          // horizontal text inset
+
+    c.font = `600 ${fs}pt "Outfit", sans-serif`;
+
+    let ry = ct;
+
+    for (const s of this.store.sails) {
+      if (!s.visible) continue;
+
+      const lines = this._wrapText(c, s.name, swW - textPadH * 2);
+      const swH   = lines.length * lineH + padV * 2;
+
+      if (ry + swH > ct + ch) break;
+
+      // Swatch — solid fill
+      if (s.showFill !== false) {
+        c.fillStyle = `rgba(${hexToRgb(s.color)},${s.opacity})`;
+        c.fillRect(lx, ry, swW, swH);
+      }
+
+      // Swatch — pattern overlay
+      const pat = s.fillPattern ?? 'none';
+      if (pat !== 'none') {
+        const pattern = this._makePattern(s.color, pat, s.patternDash ?? 4);
+        if (pattern) { c.fillStyle = pattern; c.fillRect(lx, ry, swW, swH); }
+      }
+
+      // Swatch border
+      c.strokeStyle = s.color;
+      c.lineWidth   = this._px(1);
+      c.strokeRect(lx, ry, swW, swH);
+
+      // Sail name — wrapped lines centred in swatch
+      c.font         = `600 ${fs}pt "Outfit", sans-serif`;
+      c.fillStyle    = 'rgba(15,25,40,0.88)';
+      c.shadowColor  = 'rgba(255,255,255,0.80)';
+      c.shadowBlur   = this._px(3);
+      c.textAlign    = 'center';
+      c.textBaseline = 'middle';
+
+      const totalTextH = lines.length * lineH;
+      const textStartY = ry + (swH - totalTextH) / 2 + lineH / 2;
+      for (let i = 0; i < lines.length; i++) {
+        c.fillText(lines[i], lx + swW / 2, textStartY + i * lineH);
+      }
+      c.shadowBlur = 0;
+
+      ry += swH + rowGap;
     }
   }
 

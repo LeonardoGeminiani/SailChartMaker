@@ -27,25 +27,22 @@ export class CoordinateSystem {
   twsMin = Y_MIN;
   twsMax = Y_MAX;
   twsReversed = false; // when true: twsMax at bottom, twsMin at top
+  legendWidth = 0;    // extra right space reserved for the legend panel
 
   resize(w: number, h: number): void { this.W = w; this.H = h; }
 
   toPixel(dx: number, dy: number): [number, number] {
-    const { l, r, t, b } = this.pad;
-    const cw = this.W - l - r;
-    const ch = this.H - t - b;
+    const { x: l, y: t, w: cw, h: ch } = this.chartRect;
     const t_frac = (dy - this.twsMin) / (this.twsMax - this.twsMin);
     return [
       l + (dx - this.twaMin) / (this.twaMax - this.twaMin) * cw,
-      this.twsReversed ? t + t_frac * ch : this.H - b - t_frac * ch,
+      this.twsReversed ? t + t_frac * ch : t + ch * (1 - t_frac),
     ];
   }
 
   fromPixel(px: number, py: number): [number, number] {
-    const { l, r, t, b } = this.pad;
-    const cw = this.W - l - r;
-    const ch = this.H - t - b;
-    const t_frac = this.twsReversed ? (py - t) / ch : (this.H - b - py) / ch;
+    const { x: l, y: t, w: cw, h: ch } = this.chartRect;
+    const t_frac = this.twsReversed ? (py - t) / ch : (t + ch - py) / ch;
     return [
       this.twaMin + (px - l) / cw * (this.twaMax - this.twaMin),
       this.twsMin + t_frac * (this.twsMax - this.twsMin),
@@ -61,7 +58,7 @@ export class CoordinateSystem {
 
   get chartRect(): ChartRect {
     const { l, r, t, b } = this.pad;
-    return { x: l, y: t, w: this.W - l - r, h: this.H - t - b };
+    return { x: l, y: t, w: this.W - l - r - this.legendWidth, h: this.H - t - b };
   }
 
   isInBounds(twa: number, tws: number): boolean {

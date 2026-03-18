@@ -52,7 +52,7 @@ const DEFAULT_CHART_SETTINGS: ChartSettings = {
   bgColor: '#ffffff', fontSize: 11, sailLabelFontSize: 11, smoothing: 5,
   vmgStrokeWidth: 1.5, awsStrokeWidth: 1.0, axisStrokeScale: 1.0,
   twaMin: 30, twaMax: 160, twsMin: 0, twsMax: 30,
-  showAWS: false, patternScale: 1, patternThickness: 1, twsReversed: false, resolution: 0, chartMargin: 0,
+  showAWS: false, patternScale: 1, patternThickness: 1, twsReversed: false, resolution: 0, chartMargin: 0, showLegend: false,
 };
 
 // ── SailStore ─────────────────────────────────────────────────────────────────
@@ -120,6 +120,7 @@ export class SailStore {
       showFill:    props.showFill    ?? true,
       fillPattern: props.fillPattern ?? 'none',
       patternDash: props.patternDash ?? 4,
+      showLabel:   props.showLabel   ?? true,
       points:      props.points      ?? makeOval(props.ox ?? 90, props.oy ?? 15, props.rx ?? 20, props.ry ?? 6),
     };
     this._state.sails.push(sail);
@@ -236,7 +237,7 @@ export class SailStore {
     let nextId = 1;
     const sails = DEFAULT_DEFS.map(d => ({
       id: nextId++, name: d.name, color: d.color,
-      opacity: 0.62, visible: true, showFill: true, fillPattern: 'none' as FillPattern, patternDash: 4,
+      opacity: 0.62, visible: true, showFill: true, fillPattern: 'none' as FillPattern, patternDash: 4, showLabel: true,
       points: makeOval(d.ox, d.oy, d.rx, d.ry),
     }));
     return { sails, annotations: [], nextId, nextAnnId: 1 };
@@ -257,7 +258,7 @@ export class SailStore {
       `twaMin="${cs.twaMin}"`, `twaMax="${cs.twaMax}"`,
       `twsMin="${cs.twsMin}"`, `twsMax="${cs.twsMax}"`,
       `showAWS="${cs.showAWS}"`, `patternScale="${cs.patternScale}"`, `patternThickness="${cs.patternThickness}"`, `twsReversed="${cs.twsReversed}"`, `resolution="${cs.resolution}"`,
-      `chartMargin="${cs.chartMargin}"`,
+      `chartMargin="${cs.chartMargin}"`, `showLegend="${cs.showLegend}"`,
     ].join(' ');
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<SailChart>\n`;
     xml += `  <ChartSettings ${settingsAttr}/>\n`;
@@ -266,7 +267,7 @@ export class SailStore {
       const loAttr = s.labelOffset
         ? ` labelOffsetX="${s.labelOffset.x.toFixed(3)}" labelOffsetY="${s.labelOffset.y.toFixed(3)}"`
         : '';
-      const fillAttr = ` showFill="${s.showFill ?? true}" fillPattern="${s.fillPattern ?? 'none'}" patternDash="${s.patternDash ?? 4}"`;
+      const fillAttr = ` showFill="${s.showFill ?? true}" fillPattern="${s.fillPattern ?? 'none'}" patternDash="${s.patternDash ?? 4}" showLabel="${s.showLabel ?? true}"`;
       xml += `  <Sail name="${escXml(s.name)}" color="${s.color}" opacity="${s.opacity.toFixed(2)}" visible="${s.visible}"${fillAttr} points="${pts}"${loAttr}/>\n`;
     }
     for (const a of this._state.annotations) {
@@ -302,6 +303,7 @@ export class SailStore {
         twsReversed:       g('twsReversed',  'false') === 'true',
         resolution:        Number(g('resolution',        String(DEFAULT_CHART_SETTINGS.resolution))),
         chartMargin:       Number(g('chartMargin',       String(DEFAULT_CHART_SETTINGS.chartMargin))),
+        showLegend:        g('showLegend',    'false') === 'true',
       };
     }
 
@@ -339,6 +341,7 @@ export class SailStore {
         showFill:    n.getAttribute('showFill') !== 'false',
         fillPattern: (n.getAttribute('fillPattern') ?? 'none') as FillPattern,
         patternDash: parseFloat(n.getAttribute('patternDash') ?? '4') || 4,
+        showLabel:   n.getAttribute('showLabel') !== 'false',
         points,
         labelOffset,
       });

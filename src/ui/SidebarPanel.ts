@@ -119,6 +119,7 @@ export class SidebarPanel {
     (document.getElementById('edColor')       as HTMLInputElement).value  = s.color;
     (document.getElementById('edOpacity')     as HTMLInputElement).value  = String(Math.round(s.opacity * 100));
     (document.getElementById('edShowFill')    as HTMLInputElement).checked = s.showFill !== false;
+    (document.getElementById('edShowLabel')   as HTMLInputElement).checked = s.showLabel !== false;
     (document.getElementById('edFillPattern') as HTMLSelectElement).value   = s.fillPattern ?? 'none';
     (document.getElementById('edPatternDash') as HTMLInputElement).value    = String(s.patternDash ?? 4);
     this._syncDashRow(s.fillPattern ?? 'none');
@@ -157,7 +158,9 @@ export class SidebarPanel {
     const edShowFill    = document.getElementById('edShowFill')    as HTMLInputElement;
     const edFillPattern = document.getElementById('edFillPattern') as HTMLSelectElement;
     const edPatternDash = document.getElementById('edPatternDash') as HTMLInputElement;
-    edShowFill.addEventListener('change',    () => { onFirst(); this._applyEdit(); });
+    const edShowLabel = document.getElementById('edShowLabel') as HTMLInputElement;
+    edShowLabel.addEventListener('change', () => { onFirst(); this._applyEdit(); });
+    edShowFill.addEventListener('change',  () => { onFirst(); this._applyEdit(); });
     edFillPattern.addEventListener('change', () => {
       onFirst();
       this._syncDashRow(edFillPattern.value);
@@ -175,6 +178,7 @@ export class SidebarPanel {
     s.name        = (document.getElementById('edName')        as HTMLInputElement).value;
     s.color       = (document.getElementById('edColor')       as HTMLInputElement).value;
     s.opacity     = parseInt((document.getElementById('edOpacity') as HTMLInputElement).value, 10) / 100;
+    s.showLabel   = (document.getElementById('edShowLabel')   as HTMLInputElement).checked;
     s.showFill    = (document.getElementById('edShowFill')    as HTMLInputElement).checked;
     s.fillPattern = (document.getElementById('edFillPattern') as HTMLSelectElement).value as FillPattern;
     s.patternDash = Math.max(1, parseInt((document.getElementById('edPatternDash') as HTMLInputElement).value, 10) || 4);

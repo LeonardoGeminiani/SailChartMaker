@@ -30,6 +30,7 @@ export class App implements AppActions {
   // Canvas proportion
   private ratio   = 297 / 210; // default: A4 horizontal
   private resolution = 1;
+  private static readonly LEGEND_W = 130; // logical px reserved for the legend
   private lastAreaW = 0;
   private lastAreaH = 0;
 
@@ -207,6 +208,18 @@ export class App implements AppActions {
     twsRevToggle?.addEventListener('change', () => {
       this.coords.twsReversed = twsRevToggle.checked;
       this.store.chartSettings.twsReversed = twsRevToggle.checked;
+      this.store.save();
+      this.bgRend.draw();
+      this.redraw();
+    });
+
+    const legendToggle = document.getElementById('toggleLegend') as HTMLInputElement | null;
+    legendToggle?.addEventListener('change', () => {
+      const show = legendToggle.checked;
+      this.coords.legendWidth      = show ? App.LEGEND_W : 0;
+      this.bgRend.showLegend       = show;
+      this.sailRend.showLegend     = show;
+      this.store.chartSettings.showLegend = show;
       this.store.save();
       this.bgRend.draw();
       this.redraw();
@@ -413,6 +426,9 @@ export class App implements AppActions {
     this.coords.twsMin          = s.twsMin;
     this.coords.twsMax          = s.twsMax;
     this.coords.twsReversed     = s.twsReversed ?? false;
+    this.coords.legendWidth  = (s.showLegend ?? false) ? App.LEGEND_W : 0;
+    this.bgRend.showLegend   = s.showLegend ?? false;
+    this.sailRend.showLegend = s.showLegend ?? false;
     this.coords.setMargin(s.chartMargin ?? 0);
     // Normalize legacy multiplier values (1, 2, 3) to 0 (screen mode)
     this.resolution = s.resolution <= 3 ? 0 : s.resolution;
@@ -444,6 +460,8 @@ export class App implements AppActions {
     if (awsTog) awsTog.checked = this.bgRend.showAWS;
     const twsRevTog = document.getElementById('toggleTWSReversed') as HTMLInputElement | null;
     if (twsRevTog) twsRevTog.checked = s.twsReversed ?? false;
+    const legendTog = document.getElementById('toggleLegend') as HTMLInputElement | null;
+    if (legendTog) legendTog.checked = s.showLegend ?? false;
 
     this._applySize(this.lastAreaW, this.lastAreaH);
   }

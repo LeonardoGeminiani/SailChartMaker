@@ -15,7 +15,8 @@ export interface SailData {
   fillPattern: FillPattern;
   patternDash: number;  // dash length in logical px, only used by dashes45/dashes135
   points: SailPoint[];
-  labelOffset?: SailPoint; // offset from centroid in data coords (TWA, TWS)
+  showLabel: boolean;       // whether to draw the in-graph label
+  labelOffset?: SailPoint;  // offset from centroid in data coords (TWA, TWS)
 }
 
 export interface LabelAnnotation {
@@ -51,6 +52,7 @@ export interface ChartSettings {
   twsReversed:        boolean;
   resolution:         number;
   chartMargin:        number;
+  showLegend:         boolean;
 }
 
 /** Implemented by App, consumed by InputController and SidebarPanel */

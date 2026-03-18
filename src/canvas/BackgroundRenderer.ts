@@ -41,8 +41,9 @@ function smooth(pts: [number, number][], axis: 0 | 1, half: number): [number, nu
 
 // ── BackgroundRenderer ────────────────────────────────────────────────────────
 export class BackgroundRenderer {
-  showAWS   = false;
-  bgColor   = '#ffffff';
+  showAWS     = false;
+  showLegend  = false;
+  bgColor     = '#ffffff';
   fontSize  = 11;
   smoothing = 5;          // moving-average half-window (0 = off, 10 = max)
   resolution = 1;
@@ -150,8 +151,8 @@ export class BackgroundRenderer {
     for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 2) {
       const [, py] = this.coords.toPixel(0, y);
       const sz = this._px(y % 5 === 0 ? 5 : 3);
-      seg(c, l,     py, l - sz,     py);
-      seg(c, W - r, py, W - r + sz, py);
+      seg(c, l, py, l - sz, py);
+      if (!this.showLegend) seg(c, W - r, py, W - r + sz, py);
     }
 
     // Axis labels
@@ -178,11 +179,13 @@ export class BackgroundRenderer {
       const [, py] = this.coords.toPixel(0, y);
       c.fillText(String(y), l - this._px(10), py);
     }
-    // Y right
-    c.textAlign = 'left';
-    for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 5) {
-      const [, py] = this.coords.toPixel(0, y);
-      c.fillText(String(y), W - r + this._px(10), py);
+    // Y right (suppressed when legend is visible to avoid overlap)
+    if (!this.showLegend) {
+      c.textAlign = 'left';
+      for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 5) {
+        const [, py] = this.coords.toPixel(0, y);
+        c.fillText(String(y), W - r + this._px(10), py);
+      }
     }
 
     // Axis titles
