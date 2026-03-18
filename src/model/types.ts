@@ -70,6 +70,8 @@ export interface ChartSettings {
   chartMargin:        number;
   showLegend:         boolean;
   showCursor:         boolean;
+  twaStep:            number;
+  twsStep:            number;
 }
 
 /** Implemented by App, consumed by InputController and SidebarPanel */

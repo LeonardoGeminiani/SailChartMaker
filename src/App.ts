@@ -447,6 +447,30 @@ export class App implements AppActions {
     axisInput('twsMin', v => { this.coords.twsMin = v; this.store.chartSettings.twsMin = v; });
     axisInput('twsMax', v => { this.coords.twsMax = v; this.store.chartSettings.twsMax = v; });
 
+    const twaStepVal = document.getElementById('twaStepVal')!;
+    const updateTwaStep = (delta: number) => {
+      const next = Math.max(1, (this.store.chartSettings.twaStep ?? 15) + delta);
+      this.store.chartSettings.twaStep = next;
+      this.bgRend.twaStep = next;
+      twaStepVal.textContent = String(next);
+      this.store.save();
+      this.bgRend.draw();
+    };
+    this._btn('twaStepDec', () => updateTwaStep(-5));
+    this._btn('twaStepInc', () => updateTwaStep(+5));
+
+    const twsStepVal = document.getElementById('twsStepVal')!;
+    const updateTwsStep = (delta: number) => {
+      const next = Math.max(1, (this.store.chartSettings.twsStep ?? 5) + delta);
+      this.store.chartSettings.twsStep = next;
+      this.bgRend.twsStep = next;
+      twsStepVal.textContent = String(next);
+      this.store.save();
+      this.bgRend.draw();
+    };
+    this._btn('twsStepDec', () => updateTwsStep(-1));
+    this._btn('twsStepInc', () => updateTwsStep(+1));
+
     // ── Stroke widths ─────────────────────────────────────────────────────────
     const strokeSlider = (id: string, valId: string, setter: (v: number) => void) => {
       const el  = document.getElementById(id)    as HTMLInputElement;
@@ -526,6 +550,8 @@ export class App implements AppActions {
     this.bgRend.bspLabelStep = s.bspLabelStep ?? 2;
     this.bgRend.bspFontSize  = s.bspFontSize  ?? 9;
     this.bgRend.bspColor     = s.bspColor     ?? '#128048';
+    this.bgRend.twaStep      = s.twaStep      ?? 15;
+    this.bgRend.twsStep      = s.twsStep      ?? 5;
     this.coords.twaMin          = s.twaMin;
     this.coords.twaMax          = s.twaMax;
     this.coords.twsMin          = s.twsMin;
@@ -559,6 +585,8 @@ export class App implements AppActions {
     set('axisStroke',    String(s.axisStrokeScale));setText('axisStrokeVal', String(s.axisStrokeScale));
     set('twaMin', String(s.twaMin)); set('twaMax', String(s.twaMax));
     set('twsMin', String(s.twsMin)); set('twsMax', String(s.twsMax));
+    setText('twaStepVal', String(s.twaStep ?? 15));
+    setText('twsStepVal', String(s.twsStep ?? 5));
     set('canvasRes', String(this.resolution));
     setText('chartMarginVal', String(s.chartMargin ?? 0));
 

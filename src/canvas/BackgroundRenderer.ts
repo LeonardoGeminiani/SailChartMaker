@@ -55,6 +55,8 @@ export class BackgroundRenderer {
   bspFontSize    = 9;
   bspColor       = '#128048';
   axisStrokeScale = 1.0;
+  twaStep = 15;
+  twsStep = 5;
   polar: PolarData | null = null;
 
   private readonly ctx: CanvasRenderingContext2D;
@@ -108,14 +110,17 @@ export class BackgroundRenderer {
     c.fillStyle = grd;
     c.fillRect(l, t, cw, ch);
 
+    const twaMinor = Math.max(1, Math.round(this.twaStep / 3));
+    const twsMinor = Math.max(1, Math.round(this.twsStep / 2.5));
+
     // Minor grid
     c.strokeStyle = 'rgba(90,120,160,0.18)';
     c.lineWidth = 0.5 * this.axisStrokeScale;
-    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += 5) {
+    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += twaMinor) {
       const [px] = this.coords.toPixel(x, 0);
       seg(c, px, t, px, H - b);
     }
-    for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 2) {
+    for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += twsMinor) {
       const [, py] = this.coords.toPixel(0, y);
       seg(c, l, py, W - r, py);
     }
@@ -123,11 +128,11 @@ export class BackgroundRenderer {
     // Major grid
     c.strokeStyle = 'rgba(70,100,145,0.30)';
     c.lineWidth = 0.9 * this.axisStrokeScale;
-    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += 15) {
+    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += this.twaStep) {
       const [px] = this.coords.toPixel(x, 0);
       seg(c, px, t, px, H - b);
     }
-    for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 5) {
+    for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += this.twsStep) {
       const [, py] = this.coords.toPixel(0, y);
       seg(c, l, py, W - r, py);
     }
@@ -149,15 +154,15 @@ export class BackgroundRenderer {
     // Tick marks
     c.strokeStyle = 'rgba(60,90,130,0.55)';
     c.lineWidth = 1 * this.axisStrokeScale;
-    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += 5) {
+    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += twaMinor) {
       const [px] = this.coords.toPixel(x, 0);
-      const sz = this._px(x % 15 === 0 ? 5 : 3);
-      seg(c, px, H - b,      px, H - b + sz);
-      seg(c, px, t,          px, t - sz);
+      const sz = this._px(x % this.twaStep === 0 ? 5 : 3);
+      seg(c, px, H - b, px, H - b + sz);
+      seg(c, px, t,     px, t - sz);
     }
-    for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 2) {
+    for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += twsMinor) {
       const [, py] = this.coords.toPixel(0, y);
-      const sz = this._px(y % 5 === 0 ? 5 : 3);
+      const sz = this._px(y % this.twsStep === 0 ? 5 : 3);
       seg(c, l, py, l - sz, py);
       if (!this.showLegend) seg(c, W - r, py, W - r + sz, py);
     }
@@ -169,27 +174,27 @@ export class BackgroundRenderer {
     // X bottom
     c.textAlign    = 'center';
     c.textBaseline = 'top';
-    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += 15) {
+    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += this.twaStep) {
       const [px] = this.coords.toPixel(x, 0);
       c.fillText(x + '°', px, H - b + this._px(8));
     }
     // X top
     c.textBaseline = 'bottom';
-    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += 15) {
+    for (let x = this.coords.twaMin; x <= this.coords.twaMax; x += this.twaStep) {
       const [px] = this.coords.toPixel(x, 0);
       c.fillText(x + '°', px, t - this._px(8));
     }
     // Y left
     c.textAlign    = 'right';
     c.textBaseline = 'middle';
-    for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 5) {
+    for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += this.twsStep) {
       const [, py] = this.coords.toPixel(0, y);
       c.fillText(String(y), l - this._px(10), py);
     }
     // Y right (suppressed when legend is visible to avoid overlap)
     if (!this.showLegend) {
       c.textAlign = 'left';
-      for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += 5) {
+      for (let y = this.coords.twsMin; y <= this.coords.twsMax; y += this.twsStep) {
         const [, py] = this.coords.toPixel(0, y);
         c.fillText(String(y), W - r + this._px(10), py);
       }
@@ -364,9 +369,15 @@ export class BackgroundRenderer {
       twsGrid = polar.allTWS.filter((_, i) => i % sub === 0)
                              .filter(v => v >= this.coords.twsMin && v <= this.coords.twsMax) as number[];
     } else {
-      // Dense polar: use axis grid with interval shrinking as d grows
-      const twaDelta = d <= 1 ? 30 : d <= 2 ? 15 : d <= 4 ? 10 : 5;
-      const twsDelta = d <= 1 ? 10 : d <= 3 ?  5 :               2;
+      // Dense polar: use axis grid with interval shrinking as d grows.
+      // d=2 is the "one label per major gridline" baseline (aligns to twaStep/twsStep).
+      const twaDelta = d <= 1 ? this.twaStep * 2
+                     : d <= 2 ? this.twaStep
+                     : d <= 4 ? Math.max(1, Math.round(this.twaStep / 2))
+                     :          Math.max(1, Math.round(this.twaStep / 3));
+      const twsDelta = d <= 1 ? this.twsStep * 2
+                     : d <= 3 ? this.twsStep
+                     :          Math.max(1, Math.round(this.twsStep / 2));
       twaGrid = [];
       for (let v = this.coords.twaMin; v <= this.coords.twaMax; v += twaDelta) twaGrid.push(v);
       twsGrid = [];
