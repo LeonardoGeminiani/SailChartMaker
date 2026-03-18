@@ -1,7 +1,7 @@
-import { SailData, SailPoint } from '../model/types.js';
+import { SailData, SailPoint, LabelAnnotation } from '../model/types.js';
 import { CoordinateSystem } from '../canvas/CoordinateSystem.js';
 
-export type DragType = 'point' | 'shape' | 'label';
+export type DragType = 'point' | 'shape' | 'label' | 'annotation';
 
 interface PointDrag {
   type: 'point';
@@ -31,7 +31,16 @@ interface LabelDrag {
   hitOffsetY: number;
 }
 
-type DragState = PointDrag | ShapeDrag | LabelDrag;
+interface AnnotationDrag {
+  type: 'annotation';
+  annotationId: number;
+  startPx: number;
+  startPy: number;
+  hitOffsetX: number;
+  hitOffsetY: number;
+}
+
+type DragState = PointDrag | ShapeDrag | LabelDrag | AnnotationDrag;
 
 // ── DragHandler ───────────────────────────────────────────────────────────────
 export class DragHandler {
@@ -96,9 +105,36 @@ export class DragHandler {
     }
   }
 
+  startAnnotationDrag(annId: number, px: number, py: number, anchorPx: number, anchorPy: number): void {
+    this.state = {
+      type: 'annotation', annotationId: annId,
+      startPx: px, startPy: py,
+      hitOffsetX: anchorPx - px,
+      hitOffsetY: anchorPy - py,
+    };
+  }
+
+  applyAnnotation(px: number, py: number, ann: LabelAnnotation): void {
+    if (!this.state || this.state.type !== 'annotation') return;
+    const { hitOffsetX, hitOffsetY } = this.state;
+    const [nx, ny] = this.coords.fromPixel(px + hitOffsetX, py + hitOffsetY);
+    const [cx, cy] = this.coords.clamp(nx, ny);
+    ann.x = cx;
+    ann.y = cy;
+  }
+
   end(): void { this.state = null; }
 
-  get isDragging(): boolean       { return this.state !== null; }
-  get sailId(): number | null     { return this.state?.sailId ?? null; }
-  get dragType(): DragType | null { return this.state?.type  ?? null; }
+  get isDragging(): boolean { return this.state !== null; }
+  get dragType(): DragType | null { return this.state?.type ?? null; }
+
+  get sailId(): number | null {
+    if (!this.state || this.state.type === 'annotation') return null;
+    return this.state.sailId;
+  }
+
+  get annotationId(): number | null {
+    if (this.state?.type === 'annotation') return this.state.annotationId;
+    return null;
+  }
 }

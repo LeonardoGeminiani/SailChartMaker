@@ -1,4 +1,4 @@
-import { SailData, EditMode, CursorPosition } from '../model/types.js';
+import { SailData, LabelAnnotation, EditMode, CursorPosition } from '../model/types.js';
 import { SailStore } from '../model/SailStore.js';
 import { CoordinateSystem, splinePath } from './CoordinateSystem.js';
 
@@ -80,6 +80,9 @@ export class SailRenderer {
       if (sel) this._drawHandles(c, s, mode);
     }
 
+    // Annotations (inside chart clip)
+    this._drawAnnotations(c);
+
     c.restore();
 
     // Cursor axis indicators (outside clip)
@@ -158,6 +161,44 @@ export class SailRenderer {
       c.textAlign    = 'center';
       c.textBaseline = 'middle';
       c.fillText(String(i), hx, hy);
+    }
+  }
+
+  // ── Free label annotations ────────────────────────────────────────────────
+  getAnnotationPixelPos(a: LabelAnnotation): [number, number] {
+    return this.coords.toPixel(a.x, a.y);
+  }
+
+  private _drawAnnotations(c: CanvasRenderingContext2D): void {
+    for (const a of this.store.annotations) {
+      const [px, py] = this.getAnnotationPixelPos(a);
+      const fs = this._px(this.sailLabelFontSize);
+      c.font = `600 ${fs}pt "Outfit", sans-serif`;
+      c.textAlign    = 'center';
+      c.textBaseline = 'middle';
+
+      const tw  = c.measureText(a.text).width;
+      const pad = this._px(6);
+      const bw  = tw + pad * 2;
+      const bh  = fs * (4 / 3) + this._px(10);
+      const cr  = this._px(4);
+
+      // Fill
+      c.fillStyle = a.color + '28';
+      c.beginPath();
+      c.roundRect(px - bw / 2, py - bh / 2, bw, bh, cr);
+      c.fill();
+
+      // Border
+      c.strokeStyle = a.color;
+      c.lineWidth   = this._px(1.2);
+      c.beginPath();
+      c.roundRect(px - bw / 2, py - bh / 2, bw, bh, cr);
+      c.stroke();
+
+      // Text
+      c.fillStyle = a.color;
+      c.fillText(a.text, px, py);
     }
   }
 

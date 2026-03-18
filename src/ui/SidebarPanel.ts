@@ -66,6 +66,37 @@ export class SidebarPanel {
     }
   }
 
+  // ── Annotation list ─────────────────────────────────────────────────────────
+  renderAnnotations(): void {
+    const list = document.getElementById('annotationList');
+    if (!list) return;
+    list.innerHTML = '';
+    for (const a of this.store.annotations) {
+      const item = document.createElement('div');
+      item.className = 'ann-item';
+      item.innerHTML = `
+        <input type="color" class="ann-color" value="${a.color}" title="Label color">
+        <input type="text" class="ann-text" value="${this._esc(a.text)}" placeholder="Label text" spellcheck="false">
+        <button class="ann-del" title="Remove label">×</button>`;
+      item.querySelector<HTMLInputElement>('.ann-color')!.addEventListener('input', e => {
+        a.color = (e.target as HTMLInputElement).value;
+        this.store.save();
+        this.onRedraw();
+      });
+      item.querySelector<HTMLInputElement>('.ann-text')!.addEventListener('input', e => {
+        a.text = (e.target as HTMLInputElement).value;
+        this.store.save();
+        this.onRedraw();
+      });
+      item.querySelector<HTMLButtonElement>('.ann-del')!.addEventListener('click', () => {
+        this.store.removeAnnotation(a.id);
+        this.renderAnnotations();
+        this.onRedraw();
+      });
+      list.appendChild(item);
+    }
+  }
+
   // ── Editor panel ────────────────────────────────────────────────────────────
   openEditor(name: string): void {
     const ed = document.getElementById('editor')!;

@@ -1,4 +1,4 @@
-import { SailData, SailPoint, ChartSettings } from './types.js';
+import { SailData, SailPoint, ChartSettings, LabelAnnotation } from './types.js';
 import { UndoManager } from './UndoManager.js';
 
 // ── Chart domain constants ────────────────────────────────────────────────────
@@ -43,7 +43,9 @@ const DEFAULT_DEFS: SailDef[] = [
 // ── Internal state shape (what gets snapshotted) ──────────────────────────────
 interface StoreState {
   sails: SailData[];
+  annotations: LabelAnnotation[];
   nextId: number;
+  nextAnnId: number;
 }
 
 const DEFAULT_CHART_SETTINGS: ChartSettings = {
@@ -66,12 +68,18 @@ export class SailStore {
   }
 
   // ── Accessors ───────────────────────────────────────────────────────────────
-  get sails(): SailData[]          { return this._state.sails; }
-  get selectedId(): number | null  { return this._selectedId; }
+  get sails(): SailData[]                  { return this._state.sails; }
+  get annotations(): LabelAnnotation[]    { return this._state.annotations; }
+  get selectedId(): number | null          { return this._selectedId; }
 
   find(id: number | null): SailData | null {
     if (id === null) return null;
     return this._state.sails.find(s => s.id === id) ?? null;
+  }
+
+  findAnnotation(id: number | null): LabelAnnotation | null {
+    if (id === null) return null;
+    return this._state.annotations.find(a => a.id === id) ?? null;
   }
 
   select(id: number | null): void { this._selectedId = id; }
@@ -160,6 +168,28 @@ export class SailStore {
     this.save();
   }
 
+  // ── Annotation CRUD ──────────────────────────────────────────────────────────
+  addAnnotation(text: string, x: number, y: number): LabelAnnotation {
+    this.pushUndo();
+    const ann: LabelAnnotation = { id: this._state.nextAnnId++, text, x, y, color: '#2a3f6f' };
+    this._state.annotations.push(ann);
+    this.save();
+    return ann;
+  }
+
+  removeAnnotation(id: number): void {
+    this.pushUndo();
+    this._state.annotations = this._state.annotations.filter(a => a.id !== id);
+    this.save();
+  }
+
+  updateAnnotation(id: number, changes: Partial<Pick<LabelAnnotation, 'text' | 'color' | 'x' | 'y'>>): void {
+    const a = this.findAnnotation(id);
+    if (!a) return;
+    Object.assign(a, changes);
+    this.save();
+  }
+
   reset(): void {
     this.pushUndo();
     this._state = this._defaults();
@@ -187,7 +217,12 @@ export class SailStore {
           if (data.chartSettings) {
             this.chartSettings = { ...DEFAULT_CHART_SETTINGS, ...data.chartSettings };
           }
-          return { sails: data.sails, nextId: data.nextId };
+          return {
+            sails: data.sails,
+            annotations: data.annotations ?? [],
+            nextId: data.nextId,
+            nextAnnId: data.nextAnnId ?? 1,
+          };
         }
       }
     } catch { /* corrupt */ }
@@ -200,7 +235,7 @@ export class SailStore {
       id: nextId++, name: d.name, color: d.color,
       opacity: 0.62, visible: true, points: makeOval(d.ox, d.oy, d.rx, d.ry),
     }));
-    return { sails, nextId };
+    return { sails, annotations: [], nextId, nextAnnId: 1 };
   }
 
   private _clone(): StoreState {
@@ -228,6 +263,9 @@ export class SailStore {
         ? ` labelOffsetX="${s.labelOffset.x.toFixed(3)}" labelOffsetY="${s.labelOffset.y.toFixed(3)}"`
         : '';
       xml += `  <Sail name="${escXml(s.name)}" color="${s.color}" opacity="${s.opacity.toFixed(2)}" visible="${s.visible}" points="${pts}"${loAttr}/>\n`;
+    }
+    for (const a of this._state.annotations) {
+      xml += `  <Label id="${a.id}" text="${escXml(a.text)}" x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}" color="${a.color}"/>\n`;
     }
     return xml + '</SailChart>';
   }
@@ -295,7 +333,19 @@ export class SailStore {
       });
     });
 
-    this._state = { sails, nextId };
+    const annotations: LabelAnnotation[] = [];
+    let nextAnnId = 1;
+    doc.querySelectorAll('Label').forEach(n => {
+      annotations.push({
+        id: nextAnnId++,
+        text:  n.getAttribute('text')  ?? '',
+        x:     parseFloat(n.getAttribute('x')     ?? '90'),
+        y:     parseFloat(n.getAttribute('y')     ?? '15'),
+        color: n.getAttribute('color') ?? '#2a3f6f',
+      });
+    });
+
+    this._state = { sails, annotations, nextId, nextAnnId };
     this._selectedId = null;
     this.save();
   }

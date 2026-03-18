@@ -87,6 +87,7 @@ export class App implements AppActions {
 
     this.sidebar.setupEditorListeners();
     this.sidebar.renderList();
+    this.sidebar.renderAnnotations();
     this.sidebar.updateUndoButtons();
     this.modal.setup();
     this.input.setup();
@@ -139,6 +140,7 @@ export class App implements AppActions {
     if (this.store.undo()) {
       this.selectSail(this.store.selectedId);
       this.sidebar.renderList();
+      this.sidebar.renderAnnotations();
       this.sidebar.updateUndoButtons();
       this.redraw();
     }
@@ -148,6 +150,7 @@ export class App implements AppActions {
     if (this.store.redo()) {
       this.selectSail(this.store.selectedId);
       this.sidebar.renderList();
+      this.sidebar.renderAnnotations();
       this.sidebar.updateUndoButtons();
       this.redraw();
     }
@@ -165,6 +168,15 @@ export class App implements AppActions {
 
     this._btn('btnUndo', () => this.undo());
     this._btn('btnRedo', () => this.redo());
+
+    // ── Add label ─────────────────────────────────────────────────────────────
+    this._btn('btnAddLabel', () => {
+      const cx = (this.coords.twaMin + this.coords.twaMax) / 2;
+      const cy = (this.coords.twsMin + this.coords.twsMax) / 2;
+      this.store.addAnnotation('Label', cx, cy);
+      this.sidebar.renderAnnotations();
+      this.redraw();
+    });
 
     // ── Sidebar tabs ─────────────────────────────────────────────────────────
     const panelsTrack = document.getElementById('panelsTrack')!;
@@ -335,6 +347,7 @@ export class App implements AppActions {
           this._applySettings(this.store.chartSettings);
           this.selectSail(null);
           this.sidebar.renderList();
+          this.sidebar.renderAnnotations();
           this.sidebar.updateUndoButtons();
           this.redraw();
         } catch (err) {

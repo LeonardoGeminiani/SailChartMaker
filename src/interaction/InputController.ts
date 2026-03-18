@@ -38,6 +38,15 @@ export class InputController {
     const mode = this.actions.mode;
 
     if (mode === 'select') {
+      // 0. Hit an annotation label?
+      for (const a of [...this.store.annotations].reverse()) {
+        const [apx, apy] = this.sailRend.getAnnotationPixelPos(a);
+        if (Math.hypot(px - apx, py - apy) <= LABEL_HIT_R) {
+          this.store.pushUndo();
+          this.drag.startAnnotationDrag(a.id, px, py, apx, apy);
+          return;
+        }
+      }
       // 1. Hit a control point on the selected sail?
       const sel = this.store.find(this.store.selectedId);
       if (sel) {
@@ -121,8 +130,13 @@ export class InputController {
 
     // Apply drag
     if (this.drag.isDragging) {
-      const s = this.store.find(this.drag.sailId);
-      if (s) { this.drag.apply(px, py, s); this.actions.redraw(); }
+      if (this.drag.dragType === 'annotation') {
+        const a = this.store.findAnnotation(this.drag.annotationId);
+        if (a) { this.drag.applyAnnotation(px, py, a); this.actions.redraw(); }
+      } else {
+        const s = this.store.find(this.drag.sailId);
+        if (s) { this.drag.apply(px, py, s); this.actions.redraw(); }
+      }
       return;
     }
 
@@ -132,8 +146,12 @@ export class InputController {
   // ── Pointer up ──────────────────────────────────────────────────────────────
   private _onUp(): void {
     if (this.drag.isDragging) {
-      const s = this.store.find(this.drag.sailId);
-      if (s) this.store.save();
+      if (this.drag.dragType === 'annotation') {
+        this.store.save();
+      } else {
+        const s = this.store.find(this.drag.sailId);
+        if (s) this.store.save();
+      }
     }
     this.drag.end();
   }
@@ -164,6 +182,13 @@ export class InputController {
         this.canvas.style.cursor = 'not-allowed'; return;
       }
       this.canvas.style.cursor = 'default'; return;
+    }
+    // Annotation hit check
+    for (const a of this.store.annotations) {
+      const [apx, apy] = this.sailRend.getAnnotationPixelPos(a);
+      if (Math.hypot(px - apx, py - apy) <= LABEL_HIT_R) {
+        this.canvas.style.cursor = 'grab'; return;
+      }
     }
     const s = this.store.find(this.store.selectedId);
     if (s && this.hitTester.hitPoint(px, py, s) >= 0) { this.canvas.style.cursor = 'grab'; return; }

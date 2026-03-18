@@ -13,6 +13,14 @@ export interface SailData {
   labelOffset?: SailPoint; // offset from centroid in data coords (TWA, TWS)
 }
 
+export interface LabelAnnotation {
+  id: number;
+  text: string;
+  x: number;   // TWA data coordinate
+  y: number;   // TWS data coordinate
+  color: string;
+}
+
 export type EditMode = 'select' | 'addpt' | 'delpt';
 
 export interface CursorPosition {
