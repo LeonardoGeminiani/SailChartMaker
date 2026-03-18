@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         usage: resolve(__dirname, 'usage.html'), // Add secondary files here
+        USAGE: resolve(__dirname, 'USAGE.md'), // Add secondary files here
       },
     },
   },
