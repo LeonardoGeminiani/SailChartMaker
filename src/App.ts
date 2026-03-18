@@ -315,6 +315,14 @@ export class App implements AppActions {
       this.redraw();
     });
 
+    const cursorToggle = document.getElementById('toggleCursor') as HTMLInputElement | null;
+    cursorToggle?.addEventListener('change', () => {
+      this.sailRend.showCursor = cursorToggle.checked;
+      this.store.chartSettings.showCursor = cursorToggle.checked;
+      this.store.save();
+      this.redraw();
+    });
+
     this._btn('btnLoadPolar', () => polarInput.click());
     polarInput.addEventListener('change', e => {
       const file = (e.target as HTMLInputElement).files?.[0];
@@ -526,6 +534,7 @@ export class App implements AppActions {
     this.coords.legendWidth  = (s.showLegend ?? false) ? App.LEGEND_W / (window.devicePixelRatio || 1) : 0;
     this.bgRend.showLegend   = s.showLegend ?? false;
     this.sailRend.showLegend = s.showLegend ?? false;
+    this.sailRend.showCursor = s.showCursor ?? false;
     this.coords.setMargin(s.chartMargin ?? 0);
     // Normalize legacy multiplier values (1, 2, 3) to 0 (screen mode)
     this.resolution = s.resolution <= 3 ? 0 : s.resolution;
@@ -564,6 +573,8 @@ export class App implements AppActions {
     if (twsRevTog) twsRevTog.checked = s.twsReversed ?? false;
     const legendTog = document.getElementById('toggleLegend') as HTMLInputElement | null;
     if (legendTog) legendTog.checked = s.showLegend ?? false;
+    const cursorTog = document.getElementById('toggleCursor') as HTMLInputElement | null;
+    if (cursorTog) cursorTog.checked = s.showCursor ?? false;
 
     this._applySize(this.lastAreaW, this.lastAreaH);
   }

@@ -69,6 +69,7 @@ export interface ChartSettings {
   resolution:         number;
   chartMargin:        number;
   showLegend:         boolean;
+  showCursor:         boolean;
 }
 
 /** Implemented by App, consumed by InputController and SidebarPanel */

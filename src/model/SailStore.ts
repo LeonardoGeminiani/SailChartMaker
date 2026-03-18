@@ -54,7 +54,7 @@ const DEFAULT_CHART_SETTINGS: ChartSettings = {
   bgColor: '#ffffff', fontSize: 11, sailLabelFontSize: 11, smoothing: 5,
   vmgStrokeWidth: 1.5, awsStrokeWidth: 1.0, axisStrokeScale: 1.0,
   twaMin: 30, twaMax: 160, twsMin: 0, twsMax: 30,
-  showAWS: false, showBSP: false, bspLabelStep: 2, bspFontSize: 9, bspColor: '#128048', patternScale: 1, patternThickness: 1, twsReversed: false, resolution: 0, chartMargin: 0, showLegend: false,
+  showAWS: false, showBSP: false, bspLabelStep: 2, bspFontSize: 9, bspColor: '#128048', patternScale: 1, patternThickness: 1, twsReversed: false, resolution: 0, chartMargin: 0, showLegend: false, showCursor: false,
 };
 
 // ── SailStore ─────────────────────────────────────────────────────────────────
@@ -373,6 +373,7 @@ export class SailStore {
         resolution:        Number(g('resolution',        String(DEFAULT_CHART_SETTINGS.resolution))),
         chartMargin:       Number(g('chartMargin',       String(DEFAULT_CHART_SETTINGS.chartMargin))),
         showLegend:        g('showLegend',    'false') === 'true',
+        showCursor:        g('showCursor',    'false') === 'true',
       };
     }
 

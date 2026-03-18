@@ -183,6 +183,7 @@ export class InputController {
 
     // Apply drag
     if (this.drag.isDragging) {
+      this.sailRend.dragging = true;
       if (this.drag.dragType === 'annotation') {
         const a = this.store.findAnnotation(this.drag.annotationId);
         if (a) { this.drag.applyAnnotation(px, py, a); this.actions.redraw(); }
@@ -201,6 +202,7 @@ export class InputController {
 
   // ── Pointer up ──────────────────────────────────────────────────────────────
   private _onUp(): void {
+    this.sailRend.dragging = false;
     if (this.drag.isDragging) {
       if (this.drag.dragType === 'annotation') {
         this.store.save();

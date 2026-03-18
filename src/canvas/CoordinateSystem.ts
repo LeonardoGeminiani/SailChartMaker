@@ -89,6 +89,29 @@ export function openSplinePath(
   }
 }
 
+/** Build a Path2D for an open Catmull-Rom spline (for reuse across fill+stroke). */
+export function openSplinePath2D(
+  pts: import('../model/types.js').SailPoint[],
+  coords: CoordinateSystem,
+): Path2D {
+  const path = new Path2D();
+  if (pts.length < 2) return path;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = coords.toPixel(pts[Math.max(0, i - 1)].x, pts[Math.max(0, i - 1)].y);
+    const [x1, y1] = coords.toPixel(pts[i].x, pts[i].y);
+    const [x2, y2] = coords.toPixel(pts[Math.min(n - 1, i + 1)].x, pts[Math.min(n - 1, i + 1)].y);
+    const [x3, y3] = coords.toPixel(pts[Math.min(n - 1, i + 2)].x, pts[Math.min(n - 1, i + 2)].y);
+    if (i === 0) path.moveTo(x1, y1);
+    if (i < n - 1) path.bezierCurveTo(
+      x1 + (x2 - x0) / 6, y1 + (y2 - y0) / 6,
+      x2 - (x3 - x1) / 6, y2 - (y3 - y1) / 6,
+      x2, y2,
+    );
+  }
+  return path;
+}
+
 // ── Shared Catmull-Rom closed spline helper ────────────────────────────────────
 export function splinePath(
   ctx: CanvasRenderingContext2D,
@@ -115,4 +138,32 @@ export function splinePath(
     );
   }
   ctx.closePath();
+}
+
+/** Build a Path2D for a closed Catmull-Rom spline (for reuse across fill+stroke). */
+export function splinePath2D(
+  pts: import('../model/types.js').SailPoint[],
+  coords: CoordinateSystem,
+): Path2D {
+  const path = new Path2D();
+  if (pts.length < 2) return path;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % n];
+    const p3 = pts[(i + 2) % n];
+    const [x0, y0] = coords.toPixel(p0.x, p0.y);
+    const [x1, y1] = coords.toPixel(p1.x, p1.y);
+    const [x2, y2] = coords.toPixel(p2.x, p2.y);
+    const [x3, y3] = coords.toPixel(p3.x, p3.y);
+    if (i === 0) path.moveTo(x1, y1);
+    path.bezierCurveTo(
+      x1 + (x2 - x0) / 6, y1 + (y2 - y0) / 6,
+      x2 - (x3 - x1) / 6, y2 - (y3 - y1) / 6,
+      x2, y2,
+    );
+  }
+  path.closePath();
+  return path;
 }

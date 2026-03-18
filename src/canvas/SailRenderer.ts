@@ -1,6 +1,6 @@
 import { SailData, LabelAnnotation, FillPattern, EditMode, CursorPosition, ChartSpline } from '../model/types.js';
 import { SailStore } from '../model/SailStore.js';
-import { CoordinateSystem, splinePath, openSplinePath } from './CoordinateSystem.js';
+import { CoordinateSystem, splinePath2D, openSplinePath2D } from './CoordinateSystem.js';
 
 function seg(c: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number): void {
   c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
@@ -26,6 +26,9 @@ export class SailRenderer {
   showLegend         = false;
   selectedSplineId: number | null = null;
   cursor: CursorPosition | null = null;
+  showCursor         = false;
+  /** Set to true during drag so cursor indicators are skipped each frame. */
+  dragging           = false;
   private _patCache = new Map<string, CanvasPattern | null>();
 
   constructor(
@@ -60,18 +63,25 @@ export class SailRenderer {
     c.rect(l, t, cw, ch);
     c.clip();
 
+    // Build spline paths once — reused by both fill and stroke passes.
+    const sailPaths = new Map<number, Path2D>();
+    for (const s of this.store.sails) {
+      if (!s.visible || s.points.length < 2) continue;
+      sailPaths.set(s.id, splinePath2D(s.points, this.coords));
+    }
+
     // Pass 1 — fills + patterns
     for (const s of this.store.sails) {
       if (!s.visible || s.points.length < 3) continue;
-      splinePath(c, s.points, this.coords);
+      const path = sailPaths.get(s.id)!;
       if (s.showFill !== false) {
         c.fillStyle = `rgba(${hexToRgb(s.color)},${s.opacity})`;
-        c.fill();
+        c.fill(path);
       }
       const pat = s.fillPattern ?? 'none';
       if (pat !== 'none') {
         const pattern = this._makePattern(s.color, pat, s.patternDash ?? 4);
-        if (pattern) { c.fillStyle = pattern; c.fill(); }
+        if (pattern) { c.fillStyle = pattern; c.fill(path); }
       }
     }
 
@@ -80,11 +90,11 @@ export class SailRenderer {
       if (!s.visible || s.points.length < 2) continue;
       const sel = s.id === this.store.selectedId;
 
-      splinePath(c, s.points, this.coords);
+      const path = sailPaths.get(s.id)!;
       c.strokeStyle = `rgba(${hexToRgb(s.color)},${sel ? 1.0 : 0.80})`;
       c.lineWidth   = sel ? 2.5 : 1.5;
       if (sel) c.setLineDash([7, 4]);
-      c.stroke();
+      c.stroke(path);
       c.setLineDash([]);
 
       if (s.showLabel !== false) this._drawLabel(c, s, sel);
@@ -103,8 +113,8 @@ export class SailRenderer {
     // Legend (outside chart clip, in right margin)
     if (this.showLegend) this._drawLegend(c);
 
-    // Cursor axis indicators (outside clip)
-    if (this.cursor) this._drawCursorIndicators(c);
+    // Cursor axis indicators (outside clip) — skipped during drag to reduce per-frame work
+    if (this.cursor && this.showCursor && !this.dragging) this._drawCursorIndicators(c);
   }
 
   /** Returns the label anchor pixel position, accounting for any labelOffset. */
@@ -284,11 +294,11 @@ export class SailRenderer {
       if (!sp.visible || sp.points.length < 2) continue;
       const sel = sp.id === this.selectedSplineId;
 
-      openSplinePath(c, sp.points, this.coords);
+      const path = openSplinePath2D(sp.points, this.coords);
       c.strokeStyle = sp.color;
       c.lineWidth   = sel ? sp.strokeWidth + 1 : sp.strokeWidth;
       c.setLineDash(this._dashPattern(sp.stroke));
-      c.stroke();
+      c.stroke(path);
       c.setLineDash([]);
 
       this._drawSplineLabel(c, sp, sel);
