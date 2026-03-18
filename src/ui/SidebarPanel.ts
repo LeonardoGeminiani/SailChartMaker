@@ -35,7 +35,7 @@ export class SidebarPanel {
           <button class="order-btn up-btn" title="Move up" data-id="${s.id}" ${isFirst ? 'disabled' : ''}>${this._chevronUpIcon()}</button>
           <button class="order-btn dn-btn" title="Move down" data-id="${s.id}" ${isLast  ? 'disabled' : ''}>${this._chevronDnIcon()}</button>
         </div>
-        <div class="swatch" style="background:${s.color};border-color:rgba(0,0,0,0.12)"></div>
+        <div class="swatch" style="background:${this._rgba(s.color, s.opacity)};border-color:rgba(0,0,0,0.12)"></div>
         <span class="sail-name" style="opacity:${s.visible ? 1 : 0.4}">${this._esc(s.name)}</span>
         <button class="vis-btn${s.visible ? '' : ' hidden'}" title="${s.visible ? 'Hide' : 'Show'}" data-id="${s.id}">
           ${s.visible ? this._eyeIcon() : this._eyeOffIcon()}
@@ -191,6 +191,13 @@ export class SidebarPanel {
   private _syncDashRow(pattern: string): void {
     const row = document.getElementById('dashLenRow');
     if (row) row.style.display = (pattern === 'dashes45' || pattern === 'dashes135') ? '' : 'none';
+  }
+
+  private _rgba(hex: string, opacity: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${opacity})`;
   }
 
   private _esc(str: string): string {
