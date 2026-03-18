@@ -1,5 +1,7 @@
 # Sail Chart
 
+**Live app: [https://leonardogeminiani.github.io/SailChartMaker/](https://leonardogeminiani.github.io/SailChartMaker/)**
+
 An interactive sail performance matrix for visualising **when to use each sail** based on True Wind Angle (TWA) and True Wind Speed (TWS).
 
 ![Sail Chart screenshot](./screenshots/SailChart.png)
@@ -8,7 +10,7 @@ A sail chart maps each sail's usable wind range as a region on a two-axis grid â
 
 ---
 
-## Install and run
+## Install and run (development)
 
 ```bash
 npm install
