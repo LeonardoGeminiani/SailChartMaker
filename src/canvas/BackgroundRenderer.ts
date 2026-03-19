@@ -104,7 +104,7 @@ export class BackgroundRenderer {
     c.fillRect(l, t, cw, ch);
 
     // Subtle centre highlight
-    const grd = c.createRadialGradient(l + cw * .5, t + ch * .45, 0, l + cw * .5, t + ch * .5, Math.max(cw, ch) * .7);
+    const grd = c.createRadialGradient(l + cw * .5, t + ch * .45, 0, l + cw * .5, t + ch * .5, Math.max(0, cw, ch) * .7);
     grd.addColorStop(0, 'rgba(255,255,255,0.22)');
     grd.addColorStop(1, 'rgba(180,200,220,0)');
     c.fillStyle = grd;

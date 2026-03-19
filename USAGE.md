@@ -128,6 +128,8 @@ All settings are in the **Appearance** tab of the sidebar and persist in localSt
 
 Click **Load Polar…** to load a `.csv` or `.pol` polar file and unlock polar-derived overlays.
 
+A large library of boat polars is available at **[https://download.meltemus.com/polars/](https://download.meltemus.com/polars/)** — download any `.pol` or `.csv` file and load it directly.
+
 | Setting | Control | Description |
 |---|---|---|
 | VMG curves | *(always on when polar loaded)* | Red dashed lines marking the optimal upwind and downwind TWA for each TWS |
