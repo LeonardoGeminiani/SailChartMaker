@@ -3,12 +3,47 @@
   "version": "1.0.0",
   "description": "Interactive sail chart — True Wind Angle vs True Wind Speed",
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
-    "dev": "vite",
-    "preview": "vite preview",
-    "build": "vite build"
+    "dev":            "vite",
+    "preview":        "vite preview",
+    "build":          "vite build",
+    "build:electron": "cross-env ELECTRON=1 vite build",
+    "electron:dev":   "npm run build:electron && electron .",
+    "dist":           "npm run build:electron && electron-builder"
+  },
+  "build": {
+    "appId": "com.leonardogeminiani.sailchart",
+    "productName": "Sail Chart",
+    "files": [
+      "dist/**",
+      "electron/**"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "leonardogeminiani",
+      "repo": "SailChartMaker"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Science"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ]
+    },
+    "win": {
+      "target": "nsis"
+    }
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1",
     "typescript": "^5.0.0",
     "vite": "^6.0.0"
   },

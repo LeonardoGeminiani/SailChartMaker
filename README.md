@@ -29,5 +29,37 @@ Open `http://localhost:5173` in your browser.
 
 ---
 
+## Desktop app (Electron)
+
+A downloadable desktop build is available on the [Releases](https://github.com/leonardogeminiani/SailChartMaker/releases) page for Linux, macOS, and Windows.
+
+### Run locally
+
+```bash
+npm install
+npm run electron:dev
+```
+
+### Build an installer for your platform
+
+```bash
+npm run dist
+```
+
+Output goes to `release/`. Produces a `.AppImage` + `.deb` on Linux, `.dmg` on macOS, and an `.exe` installer on Windows.
+
+### Publish a release
+
+Tag the commit and push — GitHub Actions builds all three platforms and attaches the artifacts to a GitHub Release automatically:
+
+```bash
+git tag v1.0.0
+git push --tags
+```
+
+> **Required:** go to **Settings → Actions → General → Workflow permissions** and enable **Read and write permissions** so the workflow can create releases.
+
+---
+
 - [Usage guide](./USAGE.md)
 - [Architecture reference](./ARCHITECTURE.md)

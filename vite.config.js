@@ -3,7 +3,7 @@ import { resolve } from 'path'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  base: '/SailChartMaker/',
+  base: process.env.ELECTRON ? './' : '/SailChartMaker/',
   build: {
     rollupOptions: {
       input: {
