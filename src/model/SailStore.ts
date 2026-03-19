@@ -54,7 +54,7 @@ const DEFAULT_CHART_SETTINGS: ChartSettings = {
   bgColor: '#ffffff', fontSize: 11, sailLabelFontSize: 11, smoothing: 5,
   vmgStrokeWidth: 1.5, awsStrokeWidth: 1.0, axisStrokeScale: 1.0,
   twaMin: 30, twaMax: 160, twsMin: 0, twsMax: 30,
-  showAWS: false, showBSP: false, bspLabelStep: 2, bspFontSize: 9, bspColor: '#128048', patternScale: 1, patternThickness: 1, twsReversed: false, resolution: 0, chartMargin: 0, showLegend: false, showCursor: false, twaStep: 15, twsStep: 5,
+  showAWS: false, showBSP: false, bspLabelStep: 2, bspFontSize: 9, bspColor: '#128048', patternScale: 1, patternThickness: 1, twsReversed: false, resolution: 0, chartMargin: 0, showLegend: false, showCursor: false, twaStep: 15, twsStep: 5, canvasRatio: 'a4h',
 };
 
 // ── SailStore ─────────────────────────────────────────────────────────────────
@@ -376,6 +376,7 @@ export class SailStore {
         showCursor:        g('showCursor',    'false') === 'true',
         twaStep:           Math.max(1, Number(g('twaStep', '15'))),
         twsStep:           Math.max(1, Number(g('twsStep', '5'))),
+        canvasRatio:       g('canvasRatio', 'a4h'),
       };
     }
 

@@ -72,6 +72,7 @@ export interface ChartSettings {
   showCursor:         boolean;
   twaStep:            number;
   twsStep:            number;
+  canvasRatio:        string;
 }
 
 /** Implemented by App, consumed by InputController and SidebarPanel */

@@ -486,6 +486,15 @@ export class App implements AppActions {
     strokeSlider('awsStroke',  'awsStrokeVal',  v => { this.bgRend.awsStrokeWidth  = v; this.store.chartSettings.awsStrokeWidth  = v; });
     strokeSlider('axisStroke', 'axisStrokeVal', v => { this.bgRend.axisStrokeScale = v; this.store.chartSettings.axisStrokeScale = v; });
 
+    // ── Canvas proportion ─────────────────────────────────────────────────────
+    const ratioSelect = document.getElementById('canvasRatio') as HTMLSelectElement;
+    ratioSelect?.addEventListener('change', () => {
+      this.ratio = App.RATIOS[ratioSelect.value] ?? App.RATIOS['a4h'];
+      this.store.chartSettings.canvasRatio = ratioSelect.value;
+      this.store.save();
+      this._applySize(this.lastAreaW, this.lastAreaH);
+    });
+
     // ── Canvas resolution ─────────────────────────────────────────────────────
     const resSelect = document.getElementById('canvasRes') as HTMLSelectElement;
     resSelect?.addEventListener('change', () => {
@@ -564,6 +573,7 @@ export class App implements AppActions {
     this.coords.setMargin(s.chartMargin ?? 0);
     // Normalize legacy multiplier values (1, 2, 3) to 0 (screen mode)
     this.resolution = s.resolution <= 3 ? 0 : s.resolution;
+    this.ratio = App.RATIOS[s.canvasRatio ?? 'a4h'] ?? App.RATIOS['a4h'];
 
     const set = <T extends HTMLInputElement | HTMLSelectElement>(id: string, v: string) => {
       const el = document.getElementById(id) as T | null;
@@ -587,6 +597,7 @@ export class App implements AppActions {
     set('twsMin', String(s.twsMin)); set('twsMax', String(s.twsMax));
     setText('twaStepVal', String(s.twaStep ?? 15));
     setText('twsStepVal', String(s.twsStep ?? 5));
+    set('canvasRatio', s.canvasRatio ?? 'a4h');
     set('canvasRes', String(this.resolution));
     setText('chartMarginVal', String(s.chartMargin ?? 0));
 
