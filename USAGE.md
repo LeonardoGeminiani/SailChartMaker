@@ -78,54 +78,86 @@ Changes are automatically saved to your browser's local storage — your work pe
 
 ## Appearance settings
 
-All settings are in the **Appearance** tab of the sidebar and persist in localStorage and XML.
+All settings are in the **Appearance** tab of the sidebar and persist in localStorage and XML export.
 
-### Chart
+### Appearance
 
-| Setting | Description |
-|---|---|
-| Background Color | Canvas and page background colour |
-| Axis Font Size | Size of the TWA/TWS axis labels |
-| Sail Label Size | Size of the in-chart sail name labels |
-| Pattern Scale | Tile size of fill patterns |
-| Pattern Thickness | Line weight of fill patterns |
-| Curve Smoothing | Moving-average smoothing applied to polar-derived curves |
-| Show Legend | Sidebar legend on the right showing sail swatches and names |
+| Setting | Control | Description |
+|---|---|---|
+| Background Color | Color picker | Canvas and page background colour |
+| Axis Font Size | − / + | Point size of the TWA/TWS axis tick labels |
+| Sail Label Size | − / + | Point size of the sail name labels drawn on the chart |
+| Pattern Scale | − / + | Tile spacing of fill patterns (hatch, crosshatch, dots, etc.) |
+| Pattern Thickness | − / + | Line weight of fill pattern strokes |
+| Curve Smoothing | Slider 0–10 | Moving-average half-window applied to polar-derived VMG and AWS curves; 0 = raw, 10 = maximally smoothed |
 
-### Axis range
+### Axis Range
 
-Adjust the visible TWA (°) and TWS (kts) range. Enable **TWS Reversed** to place high wind speed at the bottom.
+| Setting | Control | Description |
+|---|---|---|
+| TWA (°) | Min – Max | Visible true wind angle range on the X axis |
+| TWS (kts) | Min – Max | Visible true wind speed range on the Y axis |
+| TWA Step (°) | − / + | Major gridline and label interval on the X axis (minor grid = step ÷ 3) |
+| TWS Step (kts) | − / + | Major gridline and label interval on the Y axis (minor grid = step ÷ 2.5) |
+| TWS Reversed | Toggle | Places high wind speed at the bottom of the chart instead of the top |
+| Show Legend | Toggle | Adds a colour swatch panel to the right of the chart with sail names |
+| Cursor Indicators | Toggle | Shows TWA/TWS readout boxes on both axes as you hover (off by default) |
 
-### Stroke widths
+### Stroke Widths
 
-Independent line-weight controls for VMG lines, AWS iso-curves, and the axis/grid.
+| Setting | Control | Description |
+|---|---|---|
+| VMG lines | Slider | Line weight of the upwind/downwind VMG target curves |
+| AWS lines | Slider | Line weight of the apparent wind speed iso-curves |
+| Axis / Grid | Slider | Scale factor for all axis borders, gridlines, and tick marks |
+
+### Chart Margins
+
+| Setting | Control | Description |
+|---|---|---|
+| Border Offset | − / + | Adds extra padding around all four sides of the chart area, pushing the plot inward |
 
 ### Canvas
 
-Choose the canvas aspect ratio (A4 horizontal, A4 vertical, square) and export resolution (screen, Full HD, 2K, 4K, 5K).
+| Setting | Control | Description |
+|---|---|---|
+| Proportion | Dropdown | Canvas aspect ratio: A4 Horizontal, A4 Vertical, or Square |
+| Resolution | Dropdown | Physical pixel count for export. **Screen** matches your display's device pixel ratio. Higher options (Full HD → 5K) fix the canvas width in pixels for print-quality export regardless of screen size |
 
-### Polar / AWS
+## Polar
 
-Load a polar CSV file to unlock polar-derived overlays:
+Click **Load Polar…** to load a `.csv` or `.pol` polar file and unlock polar-derived overlays.
 
-| Overlay | Description |
-|---|---|
-| **VMG curves** | Always shown when a polar is loaded. Red dashed lines marking the optimal upwind and downwind TWA for each TWS. |
-| **AWS iso-curves** | Lines of constant Apparent Wind Speed across the TWA/TWS space. |
-| **BSP speed labels** | Boat speed values displayed as numbers at grid intersections. Configurable density, font size, and colour. |
+| Setting | Control | Description |
+|---|---|---|
+| VMG curves | *(always on when polar loaded)* | Red dashed lines marking the optimal upwind and downwind TWA for each TWS |
+| AWS Iso-Curves | Toggle | Lines of constant Apparent Wind Speed across the TWA/TWS space |
+| BSP Speed Labels | Toggle | Boat speed values displayed as numbers at grid intersections |
+| BSP Density | − / + | How many BSP labels are shown — lower is sparser, higher is denser. At the base level (2) labels land on major grid intersections. If the polar has ≤ 80 data points labels snap to the polar's own grid instead |
+| BSP Font Size | − / + | Point size of the BSP speed label text |
+| BSP Color | Color picker | Colour of the BSP speed labels |
 
-**BSP density** controls how many labels are shown — lower is sparser, higher is denser. The grid adapts automatically: if the polar has few data points (≤ 80), labels appear at the polar's own grid points; otherwise they snap to chart axis intersections.
+#### Polar file format
 
-#### Polar CSV format
+Two variants are supported — both use the same structure: TWS values as column headers, TWA as row labels, boat speed as cell values.
 
+**CSV** (comma or semicolon separated):
 ```
-twa\tws, 6,  8, 10, 12, 14, 16, 20
-52,      5.08, 6.07, 6.98, 7.74, 8.29, 8.67, 9.08
-60,      5.49, 6.56, 7.41, 8.15, 8.73, 9.11, 9.49
+twa\tws;  6;  8; 10; 12; 14; 16; 20
+52;    5.08;6.07;6.98;7.74;8.29;8.67;9.08
+60;    5.49;6.56;7.41;8.15;8.73;9.11;9.49
 …
 ```
 
-Comma or semicolon delimited. TWS values as column headers, TWA as row labels.
+**POL** (tab separated):
+```
+TWA\TWS	6	8	10	12	14	16	20
+52	5.08	6.07	6.98	7.74	8.29	8.67	9.08
+60	5.49	6.56	7.41	8.15	8.73	9.11	9.49
+…
+```
+
+The delimiter is detected automatically (tab → semicolon → comma). The header label (`twa\tws`, `TWA/TWS`, etc.) is ignored.
 
 ---
 
