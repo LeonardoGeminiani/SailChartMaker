@@ -330,7 +330,7 @@ export class App implements AppActions {
       const reader = new FileReader();
       reader.onload = ev => {
         try {
-          const polar = PolarData.fromCSV(ev.target!.result as string, file.name);
+          const polar = PolarData.parse(ev.target!.result as string, file.name);
           this.bgRend.polar = polar;
           awsToggle.disabled = false;
           if (bspToggle) bspToggle.disabled = false;

@@ -18,11 +18,11 @@ export class PolarData {
     this.name = name;
   }
 
-  static fromCSV(csv: string, filename = 'polar'): PolarData {
-    const lines = csv.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#'));
+  static parse(text: string, filename = 'polar'): PolarData {
+    const lines = text.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#'));
     if (lines.length < 2) throw new Error('Polar file has too few rows');
 
-    const delim = lines[0].includes(';') ? ';' : ',';
+    const delim = lines[0].includes('\t') ? '\t' : lines[0].includes(';') ? ';' : ',';
     const header = lines[0].split(delim).map(s => s.trim());
     const twsValues = header.slice(1).map(Number);
     if (twsValues.some(isNaN) || twsValues.length === 0) {
