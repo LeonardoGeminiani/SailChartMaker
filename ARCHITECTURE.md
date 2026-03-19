@@ -12,8 +12,6 @@ Technical reference for the Sail Chart codebase. See [README](./README.md) for i
 - **[Vite](https://vite.dev)** — local dev server and bundler
 - **[jsPDF](https://github.com/parallax/jsPDF)** — PDF export
 
-Fonts: [Cormorant Garamond](https://fonts.google.com/specimen/Cormorant+Garamond) · [Azeret Mono](https://fonts.google.com/specimen/Azeret+Mono) · [Outfit](https://fonts.google.com/specimen/Outfit)
-
 ---
 
 ## File structure
