@@ -1,6 +1,6 @@
-import { CursorPosition } from '../model/types.js';
-import { CoordinateSystem } from './CoordinateSystem.js';
-import { seg } from './renderUtils.js';
+import { CursorPosition } from '../../model/types.js';
+import { CoordinateSystem } from '../CoordinateSystem.js';
+import { seg } from '../sail/renderUtils.js';
 
 // ── CursorRenderer ────────────────────────────────────────────────────────────
 export class CursorRenderer {
@@ -29,10 +29,10 @@ export class CursorRenderer {
     c.textAlign    = 'center';
     c.textBaseline = 'middle';
 
-    const sc  = this.axisFontSize / 9;
-    const bh  = this._px(11 * sc);
-    const bwA = this._px(24 * sc);
-    const bwS = this._px(40 * sc);
+    const sc   = this.axisFontSize / 9;
+    const bh   = this._px(11 * sc);
+    const bwA  = this._px(24 * sc);
+    const bwS  = this._px(40 * sc);
     const gapV = this._px(8  * sc);
     const gapH = this._px(24 * sc);
     const cr   = this._px(2  * sc);

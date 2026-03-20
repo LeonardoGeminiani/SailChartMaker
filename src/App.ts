@@ -4,7 +4,7 @@ import { SailStore } from './model/SailStore.js';
 import { PolarData } from './model/PolarData.js';
 import { CoordinateSystem } from './canvas/CoordinateSystem.js';
 import { BackgroundRenderer } from './canvas/BackgroundRenderer.js';
-import { SailRenderer } from './canvas/SailRenderer.js';
+import { ChartRenderer } from './canvas/ChartRenderer.js';
 import { HitTester } from './canvas/HitTester.js';
 import { DragHandler } from './interaction/DragHandler.js';
 import { InputController } from './interaction/InputController.js';
@@ -18,7 +18,7 @@ export class App implements AppActions {
   private readonly store:    SailStore;
   private readonly coords:   CoordinateSystem;
   private readonly bgRend:   BackgroundRenderer;
-  private readonly sailRend: SailRenderer;
+  private readonly sailRend: ChartRenderer;
   private readonly hitTest:  HitTester;
   private readonly drag:     DragHandler;
   private readonly input:    InputController;
@@ -48,7 +48,7 @@ export class App implements AppActions {
     this.store    = new SailStore();
     this.coords   = new CoordinateSystem();
     this.bgRend   = new BackgroundRenderer(this.bgCanvas, this.coords);
-    this.sailRend = new SailRenderer(this.mainCanvas, this.coords, this.store);
+    this.sailRend = new ChartRenderer(this.mainCanvas, this.coords, this.store);
     this.hitTest  = new HitTester(this.mainCanvas, this.coords, this.store);
     this.drag     = new DragHandler(this.coords);
 

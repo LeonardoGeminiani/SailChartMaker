@@ -1,9 +1,8 @@
-import { SailData, ChartSpline, EditMode, SplineStroke } from '../model/types.js';
-import { CoordinateSystem, openSplinePath2D } from './CoordinateSystem.js';
-import { hexToRgb } from './renderUtils.js';
+import { ChartSpline, EditMode, SplineStroke } from '../../model/types.js';
+import { CoordinateSystem, openSplinePath2D } from '../CoordinateSystem.js';
 
-// ── HandleRenderer ─────────────────────────────────────────────────────────────
-export class HandleRenderer {
+// ── SplineRenderer ────────────────────────────────────────────────────────────
+export class SplineRenderer {
   dpr               = 1;
   sailLabelFontSize = 11;
   selectedSplineId: number | null = null;
@@ -24,33 +23,7 @@ export class HandleRenderer {
     }
   }
 
-  drawSailHandles(c: CanvasRenderingContext2D, s: SailData, mode: EditMode): void {
-    for (let i = 0; i < s.points.length; i++) {
-      const [hx, hy] = this.coords.toPixel(s.points[i].x, s.points[i].y);
-      const del = mode === 'delpt';
-
-      c.beginPath();
-      c.arc(hx, hy, del ? 16 : 13, 0, Math.PI * 2);
-      c.fillStyle = del ? 'rgba(192,48,48,0.15)' : `rgba(${hexToRgb(s.color)},0.18)`;
-      c.fill();
-
-      c.beginPath();
-      c.arc(hx, hy, del ? 9 : 8, 0, Math.PI * 2);
-      c.fillStyle   = del ? '#d04040' : '#ffffff';
-      c.fill();
-      c.strokeStyle = del ? '#e06060' : s.color;
-      c.lineWidth   = this._px(1.5);
-      c.stroke();
-
-      c.font         = `10pt "JetBrains Mono", monospace`;
-      c.fillStyle    = del ? '#fff' : 'rgba(20,40,70,0.85)';
-      c.textAlign    = 'center';
-      c.textBaseline = 'middle';
-      c.fillText(String(i), hx, hy);
-    }
-  }
-
-  drawSplines(c: CanvasRenderingContext2D, splines: ChartSpline[], mode: EditMode): void {
+  draw(c: CanvasRenderingContext2D, splines: ChartSpline[], mode: EditMode): void {
     for (const sp of splines) {
       if (!sp.visible || sp.points.length < 2) continue;
       const sel = sp.id === this.selectedSplineId;
@@ -62,12 +35,12 @@ export class HandleRenderer {
       c.stroke(path);
       c.setLineDash([]);
 
-      this._drawSplineLabel(c, sp, sel);
-      if (sel) this._drawSplineHandles(c, sp, mode);
+      this._drawLabel(c, sp, sel);
+      if (sel) this._drawHandles(c, sp, mode);
     }
   }
 
-  private _drawSplineLabel(c: CanvasRenderingContext2D, sp: ChartSpline, sel: boolean): void {
+  private _drawLabel(c: CanvasRenderingContext2D, sp: ChartSpline, sel: boolean): void {
     if (!sp.name) return;
     const mid = sp.points[Math.floor(sp.points.length / 2)];
     const [mx, my] = this.coords.toPixel(mid.x, mid.y);
@@ -82,14 +55,16 @@ export class HandleRenderer {
     c.shadowBlur   = 0;
   }
 
-  private _drawSplineHandles(c: CanvasRenderingContext2D, sp: ChartSpline, mode: EditMode): void {
+  private _drawHandles(c: CanvasRenderingContext2D, sp: ChartSpline, mode: EditMode): void {
     for (let i = 0; i < sp.points.length; i++) {
       const [hx, hy] = this.coords.toPixel(sp.points[i].x, sp.points[i].y);
       const del = mode === 'delpt';
+
       c.beginPath();
       c.arc(hx, hy, del ? 16 : 13, 0, Math.PI * 2);
       c.fillStyle = del ? 'rgba(192,48,48,0.15)' : 'rgba(150,150,150,0.18)';
       c.fill();
+
       c.beginPath();
       c.arc(hx, hy, del ? 9 : 8, 0, Math.PI * 2);
       c.fillStyle   = del ? '#d04040' : '#ffffff';
@@ -97,6 +72,7 @@ export class HandleRenderer {
       c.strokeStyle = del ? '#e06060' : sp.color;
       c.lineWidth   = this._px(1.5);
       c.stroke();
+
       c.font         = `10pt "JetBrains Mono", monospace`;
       c.fillStyle    = del ? '#fff' : 'rgba(20,40,70,0.85)';
       c.textAlign    = 'center';

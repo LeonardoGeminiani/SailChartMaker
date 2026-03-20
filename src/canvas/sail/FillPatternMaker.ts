@@ -1,4 +1,4 @@
-import { FillPattern } from '../model/types.js';
+import { FillPattern } from '../../model/types.js';
 import { hexToRgb } from './renderUtils.js';
 
 // ── FillPatternMaker ──────────────────────────────────────────────────────────

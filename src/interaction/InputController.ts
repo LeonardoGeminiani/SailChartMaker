@@ -2,7 +2,7 @@ import { AppActions } from '../model/types.js';
 import { SailStore } from '../model/SailStore.js';
 import { CoordinateSystem } from '../canvas/CoordinateSystem.js';
 import { HitTester } from '../canvas/HitTester.js';
-import { SailRenderer } from '../canvas/SailRenderer.js';
+import { ChartRenderer } from '../canvas/ChartRenderer.js';
 import { DragHandler } from './DragHandler.js';
 
 type CursorMoveCb = (twa: number, tws: number, sailName: string | null) => void;
@@ -17,7 +17,7 @@ export class InputController {
     private readonly coords: CoordinateSystem,
     private readonly hitTester: HitTester,
     private readonly drag: DragHandler,
-    private readonly sailRend: SailRenderer,
+    private readonly sailRend: ChartRenderer,
     private readonly actions: AppActions,
     private readonly onCursorMove: CursorMoveCb,
   ) {}

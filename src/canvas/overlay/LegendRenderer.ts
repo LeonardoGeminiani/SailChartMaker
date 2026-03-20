@@ -1,7 +1,7 @@
-import { SailData } from '../model/types.js';
-import { CoordinateSystem } from './CoordinateSystem.js';
-import { FillPatternMaker } from './FillPatternMaker.js';
-import { hexToRgb } from './renderUtils.js';
+import { SailData } from '../../model/types.js';
+import { CoordinateSystem } from '../CoordinateSystem.js';
+import { FillPatternMaker } from '../sail/FillPatternMaker.js';
+import { hexToRgb } from '../sail/renderUtils.js';
 
 // ── LegendRenderer ────────────────────────────────────────────────────────────
 export class LegendRenderer {
