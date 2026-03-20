@@ -21,9 +21,10 @@ export class HitTester {
   hitSail(px: number, py: number): SailData | null {
     const c = this.ctx;
     const res = this.resolution;
-    // Paths are built in logical coords with identity transform so that
-    // isPointInPath receives physical canvas coords (CSS * resolution).
-    c.setTransform(1, 0, 0, 1, 0, 0);
+    // Match the same transform used by SailRenderer so the hit path aligns with
+    // the visual.  isPointInPath in Chromium takes physical canvas coordinates,
+    // so scale the CSS-pixel test point by res.
+    c.setTransform(res, 0, 0, res, 0, 0);
 
     const check = (s: SailData): boolean => {
       if (!s.visible || s.points.length < 3) return false;
